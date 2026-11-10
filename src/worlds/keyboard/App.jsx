@@ -4,6 +4,7 @@ import KeyboardScene from './KeyboardScene.jsx';
 import { useKeyboardStore, KEYBOARD_PALETTES, CASE_FINISHES, PLATE_FINISHES } from './store.js';
 import { worlds } from '../catalog.js';
 import { getKeyIndexForEvent, KEYBOARD_KEYS } from './KeyboardScene.jsx';
+import './styles.css';
 
 const LAYER_DETAILS = [
   { name: 'Keycaps', detail: 'XDA profile · dye-sublimated legends' },
@@ -130,7 +131,7 @@ export default function App() {
       <div className="top-actions">
         <button className={`icon-btn sound-top ${soundEnabled ? 'sound-on' : ''}`} onClick={() => setSoundEnabled(!soundEnabled)} aria-label={soundEnabled ? 'Mute keyboard sound' : 'Enable keyboard sound'} title="Keyboard sound">{soundEnabled ? <SoundIcon /> : <MutedIcon />}</button>
         <div className="sound-toggle" role="group" aria-label="Key sound type">{['Thock', 'Clack'].map((type) => <button key={type} className={soundType === type ? 'selected' : ''} onClick={() => setSoundType(type)} aria-pressed={soundType === type}>{type}</button>)}</div>
-        <button className="worlds-toggle" onClick={() => setShowWorlds(true)}>Worlds <span>03</span></button>
+        <button className="worlds-toggle" onClick={() => setShowWorlds(true)}>Worlds <span>{String(worlds.length).padStart(2, '0')}</span></button>
         <button className={`customize-toggle ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings((v) => !v)}><span>☷</span> Customize</button>
       </div>
     </header>
@@ -175,10 +176,10 @@ export default function App() {
     {showWorlds && <div className="worlds-backdrop" onClick={() => setShowWorlds(false)}>
       <section className="worlds-panel" onClick={(e) => e.stopPropagation()} aria-label="World collection">
         <div className="drawer-head"><div><p className="eyebrow">THE COLLECTION</p><h2>Worlds to wander</h2></div><button className="close-btn" onClick={() => setShowWorlds(false)} aria-label="Close worlds">×</button></div>
-        <p className="panel-intro">Three small worlds, each with its own atmosphere and pace.</p>
-        <div className="world-list">{worlds.map((world, i) => <button className={`world-list-item ${world.status !== 'available' ? 'coming' : ''}`} key={world.id} onClick={() => { if (world.status === 'available') setShowWorlds(false); }}>
+        <p className="panel-intro">Browse a collection of small worlds, each with its own atmosphere and pace.</p>
+        <div className="world-list">{worlds.map((world, i) => <a className={`world-list-item ${world.status !== 'available' ? 'coming' : ''}`} key={world.id} href={world.status === 'available' ? world.href : undefined} aria-disabled={world.status !== 'available'} onClick={(event) => { if (world.status !== 'available') event.preventDefault(); else setShowWorlds(false); }}>
           <span className={`world-thumb thumb-${i + 1}`}><span>{String(i + 1).padStart(2, '0')}</span></span><span className="world-list-copy"><small>{world.category}</small><b>{world.title}</b></span><span className="world-list-status">{world.status === 'available' ? 'ENTER ↗' : 'COMING SOON'}</span>
-        </button>)}</div>
+        </a>)}</div>
         <a className="archive-link" href="/wireframes/explore.html">Open the full wireframe directory <span>↗</span></a>
       </section>
     </div>}

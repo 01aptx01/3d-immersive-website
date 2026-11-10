@@ -9,6 +9,7 @@ An evolving collection of interactive worlds. **Mechanical Garden**, the first w
 | World | Status | Description |
 | --- | --- | --- |
 | Mechanical Garden | Prototype | An interactive mechanical keyboard with an exploded view and customization. |
+| Kigumi Pavilion | Prototype | A Japanese timber pavilion assembled in seven stages, with visible connection studies and a time-of-day control. |
 | Aurora Drift | Planned | Placeholder in the world catalog. |
 | Mosslight Grove | Planned | Placeholder in the world catalog. |
 
@@ -23,6 +24,14 @@ An evolving collection of interactive worlds. **Mechanical Garden**, the first w
 - **Navigation:** Drag to rotate the scene; use the world menu to browse the catalog.
 
 Actual feature screenshots are not yet available in this repository. The other catalog worlds do not yet have implemented scenes.
+
+## Kigumi Pavilion
+
+- **Assembly:** Hold Build to advance through foundation stones, pillars, beams, six timber interlocks, rafters, roof tiles, and shoji screens. Scroll over the 3D scene or swipe vertically to move between unlocked stages.
+- **Joinery study:** At the interlocking-joints stage, each connection is focused and animated through an exploded, rotate, slide, and lock sequence. Click a numbered completed connection to replay it and read its explanatory note. The modeled tenon and cross wedge are illustrative geometry, not a claim about a named joint or a specific historic pavilion.
+- **Time and sound:** The slider moves from dawn through sunset to night, shifting the light, shadows, and lanterns. Optional ambient wind uses a locally bundled generated OGG loop and starts muted.
+- **Materials and assets:** The pavilion is built from procedural Three.js geometry and materials. No source texture assets or KTX2 encoder were available for this prototype, so it does not include KTX2 textures.
+- **Accessibility and performance:** The interface adapts to tablet and phone layouts, supports keyboard activation for the hold control, honors reduced-motion preferences, and instances the bamboo foliage and falling leaves.
 
 ## Getting started
 
@@ -52,6 +61,7 @@ src/
   main.jsx                 App entry point
   worlds/catalog.js        World metadata
   worlds/keyboard/         Scene, controls, styles, and state
+  worlds/kigumi/           Pavilion scene, assembly state, audio, and styles
 wireframes/                Earlier HTML prototypes
 ```
 

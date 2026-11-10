@@ -7,8 +7,18 @@ export const worlds = [
     description: 'A quiet close-up world built around a tactile mechanical keyboard. Find a key, lift the lid, and listen to the small details.',
     component: 'keyboard',
     status: 'available',
+    href: '/?world=mechanical-garden',
   },
-  { id: 'aurora', title: 'Aurora Drift', category: 'Sky · 02', component: null, status: 'coming-soon' },
-  { id: 'mosslight-grove', title: 'Mosslight Grove', category: 'Nature · 03', component: null, status: 'coming-soon' },
+  {
+    id: 'kigumi',
+    title: 'Kigumi Pavilion',
+    category: 'Architecture · 02',
+    description: 'A Japanese timber pavilion assembled through a sequence of visible, nail-free joinery.',
+    component: 'kigumi',
+    status: 'available',
+    href: '/?world=kigumi',
+  },
+  { id: 'aurora', title: 'Aurora Drift', category: 'Sky · 03', component: null, status: 'coming-soon' },
+  { id: 'mosslight-grove', title: 'Mosslight Grove', category: 'Nature · 04', component: null, status: 'coming-soon' },
 ];
 

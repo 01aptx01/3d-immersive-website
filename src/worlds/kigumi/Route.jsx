@@ -1,0 +1,214 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Howl } from 'howler';
+import { useKigumiStore, ASSEMBLY_STAGES, JOINT_DETAILS } from './store.js';
+import KigumiScene from './KigumiScene.jsx';
+import './styles.css';
+import windLoop from './assets/wind-loop.ogg?url';
+
+export default function KigumiRoute() {
+  const stage = useKigumiStore((state) => state.stage);
+  const furthestStage = useKigumiStore((state) => state.furthestStage);
+  const jointCount = useKigumiStore((state) => state.jointCount);
+  const selectedJoint = useKigumiStore((state) => state.selectedJoint);
+  const jointPhase = useKigumiStore((state) => state.jointPhase);
+  const jointAnimating = useKigumiStore((state) => state.jointAnimating);
+  const jointInfoOpen = useKigumiStore((state) => state.jointInfoOpen);
+  const soundEnabled = useKigumiStore((state) => state.soundEnabled);
+  const jointRunId = useKigumiStore((state) => state.jointRunId);
+  const jointMode = useKigumiStore((state) => state.jointMode);
+  const setStage = useKigumiStore((state) => state.setStage);
+  const advanceAssembly = useKigumiStore((state) => state.advanceAssembly);
+  const beginJointReplay = useKigumiStore((state) => state.beginJointReplay);
+  const setJointPhase = useKigumiStore((state) => state.setJointPhase);
+  const finishJoint = useKigumiStore((state) => state.finishJoint);
+  const closeJointInfo = useKigumiStore((state) => state.closeJointInfo);
+  const setSoundEnabled = useKigumiStore((state) => state.setSoundEnabled);
+  const sceneRef = useRef(null);
+  const holdFrame = useRef(0);
+  const holdStarted = useRef(0);
+  const holdActive = useRef(false);
+  const gestureStart = useRef(null);
+  const lastGesture = useRef(0);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const [timeOfDay, setTimeOfDay] = useState(0);
+  const windAudio = useRef(null);
+  const currentStage = stage < 0 ? {
+    kicker: 'READY TO BUILD',
+    title: 'The garden floor',
+    description: 'A quiet site before assembly. Begin with the foundation stones, then build upward through the timber frame and roof.',
+  } : ASSEMBLY_STAGES[stage];
+  const progress = Math.round(((stage === 3 ? 3 + jointCount / 6 : Math.max(0, stage + 1)) / ASSEMBLY_STAGES.length) * 100);
+
+  const stopHold = useCallback(() => {
+    if (holdFrame.current) cancelAnimationFrame(holdFrame.current);
+    holdFrame.current = 0;
+    holdActive.current = false;
+    setHoldProgress(0);
+  }, []);
+  const startHold = useCallback((event) => {
+    if (event?.button !== undefined && event.button !== 0) return;
+    if (holdActive.current) return;
+    event?.preventDefault?.();
+    stopHold();
+    holdActive.current = true;
+    holdStarted.current = performance.now();
+    const tick = (now) => {
+      const value = Math.min(1, (now - holdStarted.current) / 850);
+      setHoldProgress(value);
+      if (value >= 1) {
+        holdFrame.current = 0;
+        holdActive.current = false;
+        setHoldProgress(0);
+        useKigumiStore.getState().advanceAssembly();
+      } else holdFrame.current = requestAnimationFrame(tick);
+    };
+    holdFrame.current = requestAnimationFrame(tick);
+  }, [stopHold]);
+
+  useEffect(() => () => {
+    if (holdFrame.current) cancelAnimationFrame(holdFrame.current);
+  }, []);
+
+  useEffect(() => {
+    const node = sceneRef.current;
+    if (!node) return undefined;
+    const onWheel = (event) => {
+      if (Math.abs(event.deltaY) < 9) return;
+      const now = performance.now();
+      if (now - lastGesture.current < 480) return;
+      lastGesture.current = now;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.deltaY > 0) useKigumiStore.getState().advanceAssembly();
+      else {
+        const state = useKigumiStore.getState();
+        if (state.stage > 0) state.setStage(state.stage - 1);
+      }
+    };
+    const onTouchStart = (event) => {
+      const touch = event.touches?.[0];
+      if (touch) gestureStart.current = { x: touch.clientX, y: touch.clientY };
+    };
+    const onTouchEnd = (event) => {
+      const start = gestureStart.current;
+      const touch = event.changedTouches?.[0];
+      gestureStart.current = null;
+      if (!start || !touch) return;
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      if (Math.abs(dy) < 48 || Math.abs(dy) < Math.abs(dx) * 1.15) return;
+      const now = performance.now();
+      if (now - lastGesture.current < 480) return;
+      lastGesture.current = now;
+      if (dy < 0) useKigumiStore.getState().advanceAssembly();
+      else {
+        const state = useKigumiStore.getState();
+        if (state.stage > 0) state.setStage(state.stage - 1);
+      }
+    };
+    node.addEventListener('wheel', onWheel, { capture: true, passive: false });
+    node.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
+    node.addEventListener('touchend', onTouchEnd, { capture: true, passive: true });
+    return () => {
+      node.removeEventListener('wheel', onWheel, true);
+      node.removeEventListener('touchstart', onTouchStart, true);
+      node.removeEventListener('touchend', onTouchEnd, true);
+    };
+  }, []);
+
+  const buildLabel = stage < 0 ? 'Hold to place the foundation' : stage === 3 && jointCount < 6 ? `Hold to fit joint ${jointCount + 1} of 6` : stage === 6 ? 'Pavilion complete' : 'Hold to continue assembly';
+  const timeLabel = timeOfDay < 25 ? 'Dawn' : timeOfDay < 75 ? 'Sunset' : 'Night';
+  const clockLabel = timeOfDay < 25 ? '06:18' : timeOfDay < 75 ? '17:42' : '21:00';
+
+  useEffect(() => {
+    const howl = new Howl({ src: [windLoop], format: ['ogg'], loop: true, volume: 0.22, preload: true, mute: true });
+    windAudio.current = howl;
+    return () => {
+      howl.stop();
+      howl.unload();
+      windAudio.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const howl = windAudio.current;
+    if (!howl) return undefined;
+    let pauseTimer;
+    const windVolume = 0.12 + (progress / 100) * 0.1 + (timeOfDay / 100) * 0.03;
+    if (soundEnabled) {
+      howl.mute(false);
+      if (!howl.playing()) {
+        howl.volume(0);
+        howl.play();
+      }
+      howl.fade(howl.volume(), windVolume, 500);
+    } else if (howl.playing()) {
+      howl.fade(howl.volume(), 0, 320);
+      pauseTimer = window.setTimeout(() => {
+        howl.pause();
+        howl.mute(true);
+      }, 340);
+    }
+    return () => window.clearTimeout(pauseTimer);
+  }, [soundEnabled, progress, timeOfDay]);
+
+  return <main className="kigumi-shell" aria-label="Kigumi Pavilion assembly world">
+    <div className="kigumi-scene" ref={sceneRef}><KigumiScene stage={stage} jointCount={jointCount} selectedJoint={selectedJoint} jointRunId={jointRunId} jointMode={jointMode} timeOfDay={timeOfDay} progress={progress} onReplay={beginJointReplay} onPhase={setJointPhase} onFinish={finishJoint} /></div>
+    <div className="kigumi-grain" aria-hidden="true" />
+
+    <header className="kigumi-topbar">
+      <div className="kigumi-brand">
+        <a href="/" aria-label="Return to Mechanical Garden">elsewhere<span>.</span></a>
+        <div><b>02 / 04</b><small>KIGUMI PAVILION</small></div>
+      </div>
+      <div className="kigumi-top-copy"><p>木組 · TIMBER ASSEMBLY</p><span>A pavilion assembled one connection at a time</span></div>
+      <div className="kigumi-top-tools">
+        <button className={`kigumi-sound-toggle ${soundEnabled ? 'sound-on' : ''}`} onClick={() => setSoundEnabled(!soundEnabled)} aria-pressed={soundEnabled} aria-label={soundEnabled ? 'Mute garden wind' : 'Enable garden wind'} title={soundEnabled ? 'Mute garden wind' : 'Enable garden wind'}>{soundEnabled ? '♫' : '♩'}<span>{soundEnabled ? 'WIND ON' : 'SOUND OFF'}</span></button>
+        <a className="kigumi-worlds-link" href="/?world=mechanical-garden">WORLD 01 <span>↗</span></a>
+      </div>
+    </header>
+
+    <nav className="kigumi-stage-rail" aria-label="Pavilion assembly stages">
+      <p className="kigumi-rail-title">ASSEMBLY SEQUENCE</p>
+      {ASSEMBLY_STAGES.map((item, index) => <button key={item.id} className={`kigumi-stage-button ${index === stage ? 'active' : ''} ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : ''}`} onClick={() => setStage(index)} disabled={index > furthestStage} aria-current={index === stage ? 'step' : undefined} aria-label={`${item.title}, ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : index === stage ? 'current stage' : 'locked until earlier stages are assembled'}`}>
+        <span className="kigumi-stage-number">{String(index + 1).padStart(2, '0')}</span>
+        <span><b>{item.title}</b><small>{item.subtitle}</small></span>
+        <i aria-hidden="true">{index < stage ? '✓' : '·'}</i>
+      </button>)}
+      <div className="kigumi-rail-note">Joinery details are presented as an illustrative study; forms vary by region and period.</div>
+    </nav>
+
+    <aside className="kigumi-info-card" aria-live="polite">
+      <span className="kigumi-kicker">{stage < 0 ? '—' : String(stage + 1).padStart(2, '0')} · {currentStage.kicker}</span>
+      <h1>{currentStage.title}</h1>
+      <p>{currentStage.description}</p>
+      <div className="kigumi-progress" role="progressbar" aria-label="Pavilion assembly progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress} aria-valuetext={`${progress}% assembled${stage === 3 ? `; ${jointCount} of 6 joints seated` : ''}`}><span style={{ width: `${progress}%` }} /></div>
+      <div className="kigumi-progress-label"><span>{stage === 3 ? `JOINTS ${jointCount} / 6` : 'ASSEMBLY'}</span><b>{progress}%</b></div>
+    </aside>
+
+    <div className="kigumi-controls" aria-label="Assembly navigation">
+      <button className="kigumi-previous-button" onClick={() => setStage(Math.max(-1, stage - 1))} disabled={stage < 0} aria-label="Previous assembly stage">←</button>
+      <div aria-live="polite" aria-atomic="true"><small>{stage < 0 ? 'READY TO BUILD' : `STAGE ${String(stage + 1).padStart(2, '0')} / 07`}</small><b>{stage < 0 ? 'Foundation stones' : currentStage.title}</b></div>
+      <button className={`kigumi-build-button ${holdProgress > 0 ? 'holding' : ''}`} onPointerDown={(event) => { event.currentTarget.setPointerCapture?.(event.pointerId); startHold(event); }} onPointerUp={stopHold} onPointerCancel={stopHold} onPointerLeave={stopHold} onKeyDown={(event) => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) startHold(event); }} onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') stopHold(); }} onBlur={stopHold} disabled={jointAnimating || stage === 6} aria-label={buildLabel} aria-describedby="build-help" aria-keyshortcuts="Space Enter">
+        <span className="kigumi-hold-progress" style={{ transform: `scaleX(${holdProgress})` }} />
+        <span>{stage === 6 ? '✓' : holdProgress > 0 ? 'HOLD' : 'BUILD'}</span>
+      </button>
+    </div>
+
+    <section className="kigumi-time-panel" aria-label="Time of day">
+      <div className="kigumi-time-heading"><span>TIME OF DAY</span><b aria-live="polite" aria-atomic="true">{timeLabel} <small>{clockLabel}</small></b></div>
+      <input aria-label="Change time from dawn through sunset to night" aria-valuetext={`${timeLabel}, ${clockLabel}`} type="range" min="0" max="100" step="1" value={timeOfDay} style={{ '--time-progress': `${timeOfDay}%` }} onChange={(event) => setTimeOfDay(Number(event.target.value))} />
+      <div className="kigumi-time-stops"><span>Dawn</span><span>Sunset</span><span>Night</span></div>
+    </section>
+    <p id="build-help" className="kigumi-build-help">Hold to assemble · scroll over the scene to step</p>
+
+    {jointInfoOpen && selectedJoint >= 0 && <aside className="kigumi-joint-card" aria-live="polite">
+      <button className="kigumi-joint-close" onClick={closeJointInfo} aria-label="Close joinery information">×</button>
+      <span className="kigumi-kicker">CONNECTION STUDY · {jointPhase.toUpperCase()}</span>
+      <h2>{JOINT_DETAILS[selectedJoint].name}</h2>
+      <span className="kigumi-history-label">HISTORICAL CONTEXT</span>
+      <p>{JOINT_DETAILS[selectedJoint].history}</p>
+      <a className="kigumi-history-source" href="https://www.kiyomizudera.or.jp/en/learn/" target="_blank" rel="noreferrer">Kiyomizu-dera · official architecture history ↗</a>
+    </aside>}
+  </main>;
+}
