@@ -1,8 +1,10 @@
 # Elsewhere — 3D Immersive Worlds
 
-An evolving collection of interactive worlds. **Mechanical Garden**, the first world, explores a custom mechanical keyboard in 3D. The earlier home and world directory are preserved as interactive HTML wireframes.
+An evolving collection of interactive worlds. **Mechanical Garden** explores a custom mechanical keyboard, and **Kigumi Pavilion** guides visitors through an illustrated timber assembly. The earlier home and world directory are preserved as interactive HTML wireframes.
 
-> Status: experimental prototype. The keyboard world requires a browser with WebGL support. Wireframe content and future worlds are examples, not finished experiences.
+Visit the [published Site](https://elsewhere-keyboard-world.teerananpakdeekhan.chatgpt.site/) or open [World 02 — Kigumi Pavilion](https://elsewhere-keyboard-world.teerananpakdeekhan.chatgpt.site/?world=kigumi) directly.
+
+> Status: experimental prototype. The interactive 3D worlds require WebGL 2. Kigumi Pavilion shows an illustrated fallback when the renderer cannot start. Wireframe content and planned worlds are examples, not finished experiences.
 
 ## Worlds
 
@@ -32,6 +34,7 @@ Actual feature screenshots are not yet available in this repository. The other c
 - **Time and sound:** The slider moves from dawn through sunset to night, shifting the light, shadows, and lanterns. Optional ambient wind uses a locally bundled generated OGG loop and starts muted.
 - **Materials and assets:** The pavilion is built from procedural Three.js geometry and materials. No source texture assets or KTX2 encoder were available for this prototype, so it does not include KTX2 textures.
 - **Accessibility and performance:** The interface adapts to tablet and phone layouts, supports keyboard activation for the hold control, honors reduced-motion preferences, and instances the bamboo foliage and falling leaves.
+- **Graphics fallback:** If WebGL 2 is unavailable or the renderer fails, an illustrated pavilion and navigation remain available. Interactive assembly and time controls are disabled in that state.
 
 ## Getting started
 
@@ -65,7 +68,7 @@ src/
 wireframes/                Earlier HTML prototypes
 ```
 
-The catalog is a starting point for additional worlds; future routing and production hosting are still to be developed.
+The catalog keeps world metadata separate from scene modules, and each implemented world loads through its own route. World 01 remains the default; World 02 is available at `/?world=kigumi` and `/world/kigumi`. The Site is deployed, while the home and directory remain wireframes that can be developed into production navigation as more worlds arrive.
 
 ## Contributing
 
