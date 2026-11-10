@@ -33,7 +33,7 @@ Actual feature screenshots are not yet available in this repository. The other c
 - **Joinery study:** At the interlocking-joints stage, each connection is focused and animated through an exploded, rotate, slide, and lock sequence. Click a numbered completed connection to replay it and read its explanatory note. The modeled tenon and cross wedge are illustrative geometry, not a claim about a named joint or a specific historic pavilion.
 - **Time and sound:** The slider moves from dawn through sunset to night, shifting the light, shadows, and lanterns. Optional ambient wind uses a locally bundled generated OGG loop and starts muted.
 - **Materials and assets:** The pavilion is built from procedural Three.js geometry and materials. No source texture assets or KTX2 encoder were available for this prototype, so it does not include KTX2 textures.
-- **Accessibility and performance:** The interface adapts to tablet and phone layouts, supports keyboard activation for the hold control, honors reduced-motion preferences, and instances the bamboo foliage and falling leaves.
+- **Accessibility and performance:** The interface adapts to tablet and short landscape layouts, supports keyboard activation for the hold control, honors reduced-motion preferences, and instances bamboo foliage, falling leaves, and 220 roof tiles. Contact shadows use a bounded low-resolution render after assembly changes.
 - **Graphics fallback:** If WebGL 2 is unavailable or the renderer fails, an illustrated pavilion and navigation remain available. Interactive assembly and time controls are disabled in that state.
 
 ## Getting started

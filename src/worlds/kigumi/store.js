@@ -33,7 +33,7 @@ export const useKigumiStore = create((set) => ({
   jointInfoOpen: false,
   soundEnabled: false,
   setSoundEnabled: (soundEnabled) => set({ soundEnabled }),
-  setStage: (stage) => set((state) => ({ stage: Math.max(-1, Math.min(state.furthestStage, stage)) })),
+  setStage: (stage) => set((state) => state.jointAnimating ? state : ({ stage: Math.max(-1, Math.min(state.furthestStage, stage)) })),
   advanceAssembly: () => set((state) => {
     if (state.jointAnimating || state.stage >= ASSEMBLY_STAGES.length - 1) return state;
     if (state.stage === 3 && state.jointCount < 6) {
