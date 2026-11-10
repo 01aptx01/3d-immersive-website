@@ -5,6 +5,63 @@ import KigumiScene from './KigumiScene.jsx';
 import './styles.css';
 import windLoop from './assets/wind-loop.ogg?url';
 
+function preflightWebGL2() {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2');
+    if (!gl || gl.getParameter(gl.MAX_TEXTURE_SIZE) < 1) return false;
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+class RendererErrorBoundary extends React.Component {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch() {
+    this.props.onFailure?.();
+  }
+
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
+function PavilionFallback({ reason }) {
+  const explanation = reason === 'context-lost'
+    ? 'The browser lost the graphics context while drawing the pavilion.'
+    : reason === 'renderer-error'
+      ? 'The browser could not start the pavilion renderer.'
+      : 'This browser or device does not currently provide WebGL 2, which the 3D pavilion needs.';
+  return <div className="kigumi-fallback" role="alert" aria-live="assertive">
+    <svg className="kigumi-fallback-art" viewBox="0 0 900 570" role="img" aria-labelledby="fallback-art-title">
+      <title id="fallback-art-title">A quiet illustrated pavilion in a bamboo garden</title>
+      <defs><linearGradient id="fallback-sky" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#ddd2bf"/><stop offset="1" stopColor="#b8b09f"/></linearGradient></defs>
+      <rect width="900" height="570" fill="url(#fallback-sky)"/>
+      <circle cx="680" cy="120" r="48" fill="#d9a879" opacity=".75"/>
+      <path d="M0 390 Q220 345 450 390 T900 380 V570 H0Z" fill="#999080"/>
+      <g stroke="#68684e" strokeWidth="7" opacity=".55">{Array.from({ length: 18 }, (_, i) => <path key={i} d={`M${20 + i * 50} 390 Q${16 + i * 50} ${190 + (i % 4) * 22} ${25 + i * 50} ${25 + (i % 5) * 28}`} fill="none" />)}</g>
+      <path d="M205 250 L450 92 L695 250 L660 263 L450 125 L240 263Z" fill="#4a413a" stroke="#6d5445" strokeWidth="8"/>
+      <path d="M238 264 H662 V288 H238Z" fill="#815d43"/>
+      <g fill="#8e6041" stroke="#674a37" strokeWidth="5"><path d="M270 286 H296 V445 H270Z"/><path d="M437 286 H463 V445 H437Z"/><path d="M604 286 H630 V445 H604Z"/><path d="M282 290 H618 V305 H282Z"/><path d="M282 430 H618 V445 H282Z"/></g>
+      <g stroke="#a27c5b" strokeWidth="3" opacity=".75">{Array.from({ length: 8 }, (_, i) => <path key={i} d={`M${315 + i * 38} 305 V430`} />)}</g>
+      <path d="M155 468 H745" stroke="#e3d8c7" strokeWidth="24" opacity=".55"/><path d="M155 468 H745" stroke="#766f64" strokeWidth="2" strokeDasharray="5 8"/>
+    </svg>
+    <section className="kigumi-fallback-card">
+      <span className="kigumi-kicker">3D VIEW UNAVAILABLE</span>
+      <h2>The pavilion scene could not open</h2>
+      <p>{explanation} The seven-stage sequence remains visible at the left. Try a browser or device with WebGL 2 for the interactive build.</p>
+      <div className="kigumi-fallback-links"><a href="/?world=mechanical-garden">Open World 01 · Mechanical Garden ↗</a><a href="/wireframes/explore.html">Browse the world directory ↗</a></div>
+    </section>
+  </div>;
+}
+
 export default function KigumiRoute() {
   const stage = useKigumiStore((state) => state.stage);
   const furthestStage = useKigumiStore((state) => state.furthestStage);
@@ -23,6 +80,8 @@ export default function KigumiRoute() {
   const finishJoint = useKigumiStore((state) => state.finishJoint);
   const closeJointInfo = useKigumiStore((state) => state.closeJointInfo);
   const setSoundEnabled = useKigumiStore((state) => state.setSoundEnabled);
+  const onRendererFailure = useCallback(() => setWebglStatus('renderer-error'), []);
+  const onRendererCanvas = useCallback((canvas) => setRendererCanvas(canvas), []);
   const sceneRef = useRef(null);
   const holdFrame = useRef(0);
   const holdStarted = useRef(0);
@@ -31,6 +90,8 @@ export default function KigumiRoute() {
   const lastGesture = useRef(0);
   const [holdProgress, setHoldProgress] = useState(0);
   const [timeOfDay, setTimeOfDay] = useState(0);
+  const [webglStatus, setWebglStatus] = useState(() => preflightWebGL2() ? 'ready' : 'unsupported');
+  const [rendererCanvas, setRendererCanvas] = useState(null);
   const windAudio = useRef(null);
   const currentStage = stage < 0 ? {
     kicker: 'READY TO BUILD',
@@ -68,6 +129,16 @@ export default function KigumiRoute() {
   useEffect(() => () => {
     if (holdFrame.current) cancelAnimationFrame(holdFrame.current);
   }, []);
+
+  useEffect(() => {
+    if (!rendererCanvas) return undefined;
+    const onContextLost = (event) => {
+      event.preventDefault();
+      setWebglStatus('context-lost');
+    };
+    rendererCanvas.addEventListener('webglcontextlost', onContextLost);
+    return () => rendererCanvas.removeEventListener('webglcontextlost', onContextLost);
+  }, [rendererCanvas]);
 
   useEffect(() => {
     const node = sceneRef.current;
@@ -153,7 +224,9 @@ export default function KigumiRoute() {
   }, [soundEnabled, progress, timeOfDay]);
 
   return <main className="kigumi-shell" aria-label="Kigumi Pavilion assembly world">
-    <div className="kigumi-scene" ref={sceneRef}><KigumiScene stage={stage} jointCount={jointCount} selectedJoint={selectedJoint} jointRunId={jointRunId} jointMode={jointMode} timeOfDay={timeOfDay} progress={progress} onReplay={beginJointReplay} onPhase={setJointPhase} onFinish={finishJoint} /></div>
+    <div className="kigumi-scene" ref={sceneRef}>
+      {webglStatus === 'ready' ? <RendererErrorBoundary onFailure={onRendererFailure}><KigumiScene stage={stage} jointCount={jointCount} selectedJoint={selectedJoint} jointRunId={jointRunId} jointMode={jointMode} timeOfDay={timeOfDay} progress={progress} onReplay={beginJointReplay} onPhase={setJointPhase} onFinish={finishJoint} onRendererCanvas={onRendererCanvas} /></RendererErrorBoundary> : <PavilionFallback reason={webglStatus} />}
+    </div>
     <div className="kigumi-grain" aria-hidden="true" />
 
     <header className="kigumi-topbar">
@@ -189,7 +262,7 @@ export default function KigumiRoute() {
     <div className="kigumi-controls" aria-label="Assembly navigation">
       <button className="kigumi-previous-button" onClick={() => setStage(Math.max(-1, stage - 1))} disabled={stage < 0} aria-label="Previous assembly stage">←</button>
       <div aria-live="polite" aria-atomic="true"><small>{stage < 0 ? 'READY TO BUILD' : `STAGE ${String(stage + 1).padStart(2, '0')} / 07`}</small><b>{stage < 0 ? 'Foundation stones' : currentStage.title}</b></div>
-      <button className={`kigumi-build-button ${holdProgress > 0 ? 'holding' : ''}`} onPointerDown={(event) => { event.currentTarget.setPointerCapture?.(event.pointerId); startHold(event); }} onPointerUp={stopHold} onPointerCancel={stopHold} onPointerLeave={stopHold} onKeyDown={(event) => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) startHold(event); }} onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') stopHold(); }} onBlur={stopHold} disabled={jointAnimating || stage === 6} aria-label={buildLabel} aria-describedby="build-help" aria-keyshortcuts="Space Enter">
+      <button className={`kigumi-build-button ${holdProgress > 0 ? 'holding' : ''}`} onPointerDown={(event) => { event.currentTarget.setPointerCapture?.(event.pointerId); startHold(event); }} onPointerUp={stopHold} onPointerCancel={stopHold} onPointerLeave={stopHold} onKeyDown={(event) => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) startHold(event); }} onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') stopHold(); }} onBlur={stopHold} disabled={jointAnimating || stage === 6 || webglStatus !== 'ready'} aria-label={buildLabel} aria-describedby="build-help" aria-keyshortcuts="Space Enter">
         <span className="kigumi-hold-progress" style={{ transform: `scaleX(${holdProgress})` }} />
         <span>{stage === 6 ? '✓' : holdProgress > 0 ? 'HOLD' : 'BUILD'}</span>
       </button>
@@ -197,7 +270,7 @@ export default function KigumiRoute() {
 
     <section className="kigumi-time-panel" aria-label="Time of day">
       <div className="kigumi-time-heading"><span>TIME OF DAY</span><b aria-live="polite" aria-atomic="true">{timeLabel} <small>{clockLabel}</small></b></div>
-      <input aria-label="Change time from dawn through sunset to night" aria-valuetext={`${timeLabel}, ${clockLabel}`} type="range" min="0" max="100" step="1" value={timeOfDay} style={{ '--time-progress': `${timeOfDay}%` }} onChange={(event) => setTimeOfDay(Number(event.target.value))} />
+      <input aria-label="Change time from dawn through sunset to night" aria-valuetext={`${timeLabel}, ${clockLabel}`} type="range" min="0" max="100" step="1" value={timeOfDay} disabled={webglStatus !== 'ready'} style={{ '--time-progress': `${timeOfDay}%` }} onChange={(event) => setTimeOfDay(Number(event.target.value))} />
       <div className="kigumi-time-stops"><span>Dawn</span><span>Sunset</span><span>Night</span></div>
     </section>
     <p id="build-help" className="kigumi-build-help">Hold to assemble · scroll over the scene to step</p>

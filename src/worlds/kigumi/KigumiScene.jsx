@@ -430,10 +430,10 @@ function SceneContents({ stage, jointCount, selectedJoint, jointRunId, jointMode
   </>;
 }
 
-export default function KigumiScene({ stage, jointCount, selectedJoint, jointRunId, jointMode, timeOfDay, progress, onReplay, onPhase, onFinish }) {
+export default function KigumiScene({ stage, jointCount, selectedJoint, jointRunId, jointMode, timeOfDay, progress, onReplay, onPhase, onFinish, onRendererCanvas }) {
   const jointRefs = useRef([]);
   const controlsRef = useRef();
-  return <Canvas shadows dpr={[1, 1.5]} camera={{ position: [9.3, 7.1, 10.5], fov: 37, near: 0.1, far: 120 }} gl={{ antialias: true, powerPreference: 'high-performance' }}>
+  return <Canvas shadows dpr={[1, 1.5]} camera={{ position: [9.3, 7.1, 10.5], fov: 37, near: 0.1, far: 120 }} gl={{ antialias: true, powerPreference: 'high-performance' }} onCreated={({ gl }) => onRendererCanvas?.(gl.domElement)}>
     <SceneContents stage={stage} jointCount={jointCount} selectedJoint={selectedJoint} jointRunId={jointRunId} jointMode={jointMode} jointRefs={jointRefs} controlsRef={controlsRef} timeOfDay={timeOfDay} progress={progress} onReplay={onReplay} onPhase={onPhase} onFinish={onFinish} />
   </Canvas>;
 }
