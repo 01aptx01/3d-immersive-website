@@ -2,22 +2,74 @@ import { useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, Environment, OrbitControls, Text } from '@react-three/drei';
 import * as THREE from 'three';
-import { useKeyboardStore, KEYBOARD_PALETTES } from './store';
+import { useKeyboardStore, KEYBOARD_PALETTES, PLATE_FINISHES } from './store';
 
 const ROWS = [
   { keys: ['ESC', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '⌫'], offset: 0.0 },
   { keys: ['TAB', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']', '\\'], offset: 0.15 },
   { keys: ['CAPS', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';', "'", 'ENTER'], offset: 0.25 },
-  { keys: ['SHIFT', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', 'SHIFT'], offset: 0.38 },
+  { keys: ['SHIFT', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', 'SHIFT', '▲'], offset: 0.38 },
   { keys: ['CTRL', '⌘', 'ALT', 'SPACE', 'ALT', 'FN', '◀', '▼', '▶'], offset: 0.53 },
 ];
+const KEY_CODES = [
+  ['Escape', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'Minus', 'Equal', 'Backspace'],
+  ['Tab', 'KeyQ', 'KeyW', 'KeyE', 'KeyR', 'KeyT', 'KeyY', 'KeyU', 'KeyI', 'KeyO', 'KeyP', 'BracketLeft', 'BracketRight', 'Backslash'],
+  ['CapsLock', 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'Semicolon', 'Quote', 'Enter'],
+  ['ShiftLeft', 'KeyZ', 'KeyX', 'KeyC', 'KeyV', 'KeyB', 'KeyN', 'KeyM', 'Comma', 'Period', 'Slash', 'ShiftRight', 'ArrowUp'],
+  ['ControlLeft', 'MetaLeft', 'AltLeft', 'Space', 'AltRight', 'Fn', 'ArrowLeft', 'ArrowDown', 'ArrowRight'],
+];
+const SHIFTED_CHARACTERS = {
+  '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
+  '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|', ';': ':', "'": '"', ',': '<', '.': '>', '/': '?',
+};
 const KEY_W = 0.43;
 const KEY_D = 0.42;
 const GAP = 0.065;
-export const KEYBOARD_KEYS = ROWS.flatMap((row, rowIndex) => row.keys.map((label, col) => {
-  const width = label === 'SPACE' ? 2.8 : label === 'SHIFT' ? 0.8 : ['ENTER', 'CAPS', 'TAB', '⌫', '\\'].includes(label) ? 0.68 : ['CTRL', 'ALT', 'FN', '⌘'].includes(label) ? 0.52 : KEY_W;
-  return { label, row: rowIndex, col, width, x: (col - (row.keys.length - 1) / 2) * (KEY_W + GAP) + row.offset, z: (rowIndex - 2) * (KEY_D + GAP) };
-}));
+function keyWidthUnits(label, rowIndex, col) {
+  if (label === 'SPACE') return 6.25;
+  if (label === 'SHIFT') return col === ROWS[rowIndex].keys.length - 2 ? 1.75 : 2.25;
+  if (label === 'ENTER') return 2.25;
+  if (label === 'CAPS') return 1.75;
+  if (label === 'TAB' || label === '⌫' || label === '\\') return 1.5;
+  if (['CTRL', 'ALT', 'FN', '⌘'].includes(label)) return 1.25;
+  return 1;
+}
+export const KEYBOARD_KEYS = ROWS.flatMap((row, rowIndex) => {
+  const keys = row.keys.map((label, col) => {
+    const units = keyWidthUnits(label, rowIndex, col);
+    return { label, code: KEY_CODES[rowIndex][col], row: rowIndex, col, width: KEY_W * units, units, shifted: SHIFTED_CHARACTERS[label] ?? null, z: (rowIndex - 2) * (KEY_D + GAP) };
+  });
+  const rowWidth = keys.reduce((width, key) => width + key.width, GAP * (keys.length - 1));
+  let cursor = -rowWidth / 2;
+  return keys.map((key) => {
+    const x = cursor + key.width / 2 + row.offset;
+    cursor += key.width + GAP;
+    return { ...key, x };
+  });
+}).flat();
+
+const PRINTABLE_KEY_INDEX = new Map();
+KEYBOARD_KEYS.forEach((key, index) => {
+  if (key.label.length === 1) {
+    PRINTABLE_KEY_INDEX.set(key.label.toLocaleLowerCase(), index);
+    const shifted = SHIFTED_CHARACTERS[key.label];
+    if (shifted) PRINTABLE_KEY_INDEX.set(shifted, index);
+  }
+});
+PRINTABLE_KEY_INDEX.set(' ', KEYBOARD_KEYS.findIndex((key) => key.label === 'SPACE'));
+const NON_PRINTING_SINGLE_GLYPHS = new Set(['⌘', '◀', '▼', '▶', '▲']);
+
+// Printable keys follow the browser's active layout (event.key). Physical codes are
+// reserved for non-printing keys so AZERTY and other layouts resolve the character
+// the user actually typed instead of the key's US-position label.
+export function getKeyIndexForEvent(event) {
+  if (typeof event.key === 'string' && event.key.length === 1) {
+    return PRINTABLE_KEY_INDEX.get(event.key.toLocaleLowerCase()) ?? -1;
+  }
+  const codeIndex = KEYBOARD_KEYS.findIndex((key) => key.code === event.code);
+  if (codeIndex >= 0 && KEYBOARD_KEYS[codeIndex].label.length === 1 && !NON_PRINTING_SINGLE_GLYPHS.has(KEYBOARD_KEYS[codeIndex].label)) return -1;
+  return codeIndex;
+}
 
 function SpringCoil({ keyInfo, y, opacity = 1 }) {
   const geometry = useMemo(() => {
@@ -42,10 +94,12 @@ function KeyboardAssembly({ color }) {
   const explode = useKeyboardStore((s) => s.explodeStage);
   const isolatedLayer = useKeyboardStore((s) => s.isolatedLayer);
   const caseColor = useKeyboardStore((s) => s.caseColor);
+  const plateFinish = useKeyboardStore((s) => s.plateFinish);
   const soundType = useKeyboardStore((s) => s.soundType);
   const setHoveredKey = useKeyboardStore((s) => s.setHoveredKey);
-  const activeKey = useKeyboardStore((s) => s.activeKey);
-  const setActiveKey = useKeyboardStore((s) => s.setActiveKey);
+  const pressedKeys = useKeyboardStore((s) => s.pressedKeys);
+  const pressKey = useKeyboardStore((s) => s.pressKey);
+  const releaseKey = useKeyboardStore((s) => s.releaseKey);
   const soundEnabled = useKeyboardStore((s) => s.soundEnabled);
   const sound = useRef(null);
   const geometries = useMemo(() => ({
@@ -58,23 +112,22 @@ function KeyboardAssembly({ color }) {
   const matProps = (layer) => ({ transparent: layerOpacity(layer) < 1, opacity: layerOpacity(layer), depthWrite: layerOpacity(layer) === 1 });
   const offsets = {
     foam: amount * 0.2,
-    pcb: amount * 0.37,
-    plate: amount * 0.56,
-    switches: amount * 0.78,
-    caps: amount * 1.16,
+    pcb: amount * 0.43,
+    plate: amount * 0.7,
+    switches: amount * 0.96,
+    caps: amount * 1.38,
   };
   const isolateLayer = (layer, event) => {
     event?.stopPropagation();
     setIsolatedLayer(isolatedLayer === layer ? 'All layers' : layer);
   };
 
-  useFrame((_, dt) => {
+  useFrame(() => {
     if (!caps.current) return;
-    const easing = 1 - Math.exp(-dt * 12);
     KEYBOARD_KEYS.forEach((key, i) => {
       const isHovered = hovered === i;
-      const isPressed = activeKey === i;
-      const press = isPressed ? 0.075 : 0;
+      const isPressed = pressedKeys.has(i);
+      const press = isPressed ? 0.025 + travel * 0.12 : 0;
       const capY = 0.39 + offsets.caps + (isHovered ? 0.4 : 0) - press;
       const capMatrix = new THREE.Matrix4().compose(new THREE.Vector3(key.x, capY, key.z), new THREE.Quaternion(), new THREE.Vector3(key.width, 0.2, KEY_D));
       caps.current.setMatrixAt(i, capMatrix);
@@ -94,8 +147,6 @@ function KeyboardAssembly({ color }) {
       if (!ref.current) continue;
       ref.current.instanceMatrix.needsUpdate = true;
       if (ref.current.instanceColor) ref.current.instanceColor.needsUpdate = true;
-      const targetTilt = (travel - 0.58) * 0.13;
-      ref.current.rotation.x += (targetTilt - ref.current.rotation.x) * easing;
     }
   });
 
@@ -121,9 +172,12 @@ function KeyboardAssembly({ color }) {
     } catch { /* audio is an optional enhancement */ }
   }
 
-  const selectedKey = hovered === null ? null : KEYBOARD_KEYS[hovered];
+  const activeKey = useKeyboardStore((s) => s.activeKey);
+  const selectedIndex = hovered ?? activeKey;
+  const selectedKey = selectedIndex === null ? null : KEYBOARD_KEYS[selectedIndex];
   const switchOpacity = layerOpacity('Switches');
   const capOpacity = layerOpacity('Keycaps');
+  const plateMaterial = PLATE_FINISHES[plateFinish];
 
   return <group>
     {layerOpacity('Case') > 0 && <mesh position={[0, -0.055, 0]} receiveShadow castShadow onClick={(e) => isolateLayer('Case', e)}>
@@ -140,7 +194,7 @@ function KeyboardAssembly({ color }) {
     </mesh>}
     {layerOpacity('Plate') > 0 && <mesh position={[0, 0.31 + offsets.plate, 0]} castShadow receiveShadow onClick={(e) => isolateLayer('Plate', e)}>
       <boxGeometry args={[8.12, 0.08, 3.18]} />
-      <meshStandardMaterial color="#dfd9cf" metalness={0.2} roughness={0.45} {...matProps('Plate')} />
+      <meshStandardMaterial {...plateMaterial} {...matProps('Plate')} />
     </mesh>}
     <instancedMesh ref={lowerHousings} args={[geometries.housing, undefined, KEYBOARD_KEYS.length]} castShadow receiveShadow onClick={(e) => isolateLayer('Switches', e)}>
       <meshStandardMaterial color="#b57565" roughness={0.4} transparent={switchOpacity < 1} opacity={switchOpacity} depthWrite={switchOpacity === 1} />
@@ -152,15 +206,16 @@ function KeyboardAssembly({ color }) {
       <meshStandardMaterial color="#624e63" roughness={0.34} transparent={switchOpacity < 1} opacity={switchOpacity} depthWrite={switchOpacity === 1} />
     </instancedMesh>
     <instancedMesh ref={caps} args={[geometries.cap, undefined, KEYBOARD_KEYS.length]} castShadow receiveShadow onPointerMove={(e) => { e.stopPropagation(); setHoveredKey(e.instanceId ?? null); }} onPointerOut={() => setHoveredKey(null)} onClick={(e) => {
-      e.stopPropagation(); const id = e.instanceId ?? null; setActiveKey(id); playClick(); window.setTimeout(() => setActiveKey(null), 110);
+      e.stopPropagation(); const id = e.instanceId ?? null; if (id !== null) { pressKey(id); playClick(); window.setTimeout(() => releaseKey(id), 110); }
     }} onDoubleClick={(e) => isolateLayer('Keycaps', e)}>
       <meshStandardMaterial roughness={0.31} metalness={0.02} transparent={capOpacity < 1} opacity={capOpacity} depthWrite={capOpacity === 1} />
     </instancedMesh>
-    {KEYBOARD_KEYS.map((key, i) => <Text key={`${key.row}-${key.col}`} position={[key.x, 0.51 + offsets.caps + (hovered === i ? 0.4 : 0), key.z]} rotation={[-Math.PI / 2, 0, 0]} fontSize={key.width > 0.75 ? 0.09 : 0.115} maxWidth={key.width - 0.05} anchorX="center" anchorY="middle" color={color.legend} fillOpacity={capOpacity} onClick={(e) => {
-      e.stopPropagation(); setActiveKey(i); playClick(); window.setTimeout(() => setActiveKey(null), 110);
-    }} onDoubleClick={(e) => isolateLayer('Keycaps', e)}>
-      {key.label}
-    </Text>)}
+    {KEYBOARD_KEYS.map((key, i) => <group key={`${key.row}-${key.col}`}>
+      <Text position={[key.x, 0.51 + offsets.caps + (hovered === i ? 0.4 : 0), key.z]} rotation={[-Math.PI / 2, 0, 0]} fontSize={key.width > 0.75 ? 0.09 : 0.115} maxWidth={key.width - 0.05} anchorX="center" anchorY="middle" color={color.legend} fillOpacity={capOpacity} onClick={(e) => {
+      e.stopPropagation(); pressKey(i); playClick(); window.setTimeout(() => releaseKey(i), 110);
+      }} onDoubleClick={(e) => isolateLayer('Keycaps', e)}>{key.label}</Text>
+      {key.shifted && <Text position={[key.x, 0.51 + offsets.caps + (hovered === i ? 0.4 : 0), key.z - 0.115]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.052} maxWidth={key.width - 0.04} anchorX="center" anchorY="middle" color={color.legend} fillOpacity={capOpacity} raycast={() => null}>{key.shifted}</Text>}
+    </group>)}
     {selectedKey && <group onClick={(e) => isolateLayer('Switches', e)}><SpringCoil key={selectedKey.label + selectedKey.row + selectedKey.col} keyInfo={selectedKey} y={0.35 + offsets.switches} opacity={switchOpacity} /></group>}
     <mesh position={[0, -0.22, 0]}>
       <boxGeometry args={[7.8, 0.035, 2.8]} />
@@ -183,15 +238,14 @@ export default function KeyboardScene() {
   const paletteName = useKeyboardStore((s) => s.palette);
   const palette = KEYBOARD_PALETTES[paletteName];
   return <Canvas shadows dpr={[1, 1.65]} camera={{ position: [0, 5.8, 8.6], fov: 37 }} gl={{ antialias: true, alpha: true }}>
-    <color attach="background" args={['#111620']} />
-    <fog attach="fog" args={['#111620', 12, 24]} />
-    <ambientLight intensity={0.8} />
-    <spotLight position={[-5, 8, 4]} intensity={105} angle={0.38} penumbra={0.65} castShadow shadow-mapSize={[1024, 1024]} />
-    <pointLight position={[5, 3, -4]} intensity={25} color="#d5b8a9" />
-    <Environment preset="city" />
+    <fog attach="fog" args={['#f2ddeb', 12, 24]} />
+    <ambientLight intensity={1.25} />
+    <spotLight position={[-5, 8, 4]} intensity={92} color="#fff4f4" angle={0.4} penumbra={0.7} castShadow shadow-mapSize={[1024, 1024]} />
+    <pointLight position={[5, 3, -4]} intensity={28} color="#e4c8f4" />
+    <Environment preset="studio" />
     <mesh position={[0, -0.34, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
       <planeGeometry args={[200, 200]} />
-      <meshStandardMaterial color="#d8c9bd" roughness={0.72} metalness={0.02} />
+      <meshStandardMaterial color="#f1dce8" roughness={0.82} metalness={0.01} />
     </mesh>
     <group rotation={[-0.12, -0.13, 0]}>
       <KeyboardAssembly color={palette} />

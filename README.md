@@ -15,10 +15,11 @@ An evolving collection of interactive worlds. **Mechanical Garden**, the first w
 ## Mechanical Garden features
 
 - **Exploded view:** Drag the bottom slider to separate the keyboard layers.
-- **Layer isolation:** Select a layer in settings, or click parts in the scene; double-click a keycap to isolate keycaps. Other layers fade.
+- **Layer isolation:** Select any of six layers from the scene rail or click a part in the scene. Double-click a keycap to isolate the keycap layer; other layers stay visible as 15% ghosts.
 - **Switch anatomy:** Hover over a key to reveal its switch components.
-- **Keyboard input:** Press supported physical keys or click a keycap. Sound can be switched on or off and set to Thock or Clack.
-- **Customization:** Change the keycap palette and case finish in the settings panel.
+- **Keyboard input:** Printable characters follow the browser's active keyboard layout and highlight the matching English key legend. Modifiers, arrows, and other special keys use physical key positions. Thai/IME characters and symbols without an English legend do not highlight a key.
+- **Customization:** Choose from five pastel keycap palettes, seven case colors, and three plate materials. Switch travel remains adjustable in the customization panel.
+- **Sound:** Toggle sound and choose Thock or Clack from the top controls.
 - **Navigation:** Drag to rotate the scene; use the world menu to browse the catalog.
 
 Actual feature screenshots are not yet available in this repository. The other catalog worlds do not yet have implemented scenes.

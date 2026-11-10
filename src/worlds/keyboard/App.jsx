@@ -1,15 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import KeyboardScene from './KeyboardScene.jsx';
-import { useKeyboardStore, KEYBOARD_PALETTES, CASE_FINISHES, ASSEMBLY_LAYERS } from './store.js';
+import { useKeyboardStore, KEYBOARD_PALETTES, CASE_FINISHES, PLATE_FINISHES } from './store.js';
 import { worlds } from '../catalog.js';
-import { KEYBOARD_KEYS } from './KeyboardScene.jsx';
+import { getKeyIndexForEvent, KEYBOARD_KEYS } from './KeyboardScene.jsx';
+
+const LAYER_DETAILS = [
+  { name: 'Keycaps', detail: 'XDA profile · dye-sublimated legends' },
+  { name: 'Switches', detail: 'Linear housings · stem + spring' },
+  { name: 'Plate', detail: 'Aluminum · switch mounting plate' },
+  { name: 'Foam', detail: 'Poron · sound dampening layer' },
+  { name: 'PCB', detail: 'FR-4 · hot-swap circuit board' },
+  { name: 'Case', detail: 'Tray mount · lower shell' },
+];
 
 export default function App() {
   const shell = useRef(null);
   const inputAudio = useRef(null);
   const [showWorlds, setShowWorlds] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(true);
   const hoveredKey = useKeyboardStore((s) => s.hoveredKey);
   const activeKey = useKeyboardStore((s) => s.activeKey);
   const soundEnabled = useKeyboardStore((s) => s.soundEnabled);
@@ -20,6 +29,8 @@ export default function App() {
   const setPalette = useKeyboardStore((s) => s.setPalette);
   const caseColor = useKeyboardStore((s) => s.caseColor);
   const setCaseColor = useKeyboardStore((s) => s.setCaseColor);
+  const plateFinish = useKeyboardStore((s) => s.plateFinish);
+  const setPlateFinish = useKeyboardStore((s) => s.setPlateFinish);
   const soundType = useKeyboardStore((s) => s.soundType);
   const setSoundType = useKeyboardStore((s) => s.setSoundType);
   const explodeStage = useKeyboardStore((s) => s.explodeStage);
@@ -29,11 +40,8 @@ export default function App() {
   const selected = hoveredKey ?? activeKey;
 
   useEffect(() => {
-    const aliases = { ' ': 'SPACE', Enter: 'ENTER', Shift: 'SHIFT', Backspace: '⌫', Tab: 'TAB', CapsLock: 'CAPS', Escape: 'ESC', Control: 'CTRL', Alt: 'ALT', Meta: '⌘', ArrowLeft: '◀', ArrowDown: '▼', ArrowRight: '▶' };
-    function keyLabel(event) {
-      if (event.code === 'Space') return 'SPACE';
-      return aliases[event.key] || event.key.toUpperCase();
-    }
+    const heldByCode = new Map();
+    let composing = false;
     function playPhysicalClick() {
       if (!useKeyboardStore.getState().soundEnabled) return;
       try {
@@ -56,96 +64,112 @@ export default function App() {
         osc.stop(ctx.currentTime + duration);
       } catch { /* audio is optional */ }
     }
+    function isEditableTarget(target) {
+      if (!(target instanceof Element)) return false;
+      return Boolean(target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]'));
+    }
     function onKeyDown(event) {
-      if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
-      const label = keyLabel(event);
-      const index = KEYBOARD_KEYS.findIndex((key) => key.label === label);
+      if (event.repeat || event.isComposing || composing || event.keyCode === 229 || isEditableTarget(event.target)) return;
+      const index = getKeyIndexForEvent(event);
       if (index < 0) return;
-      if (label === 'SPACE') event.preventDefault();
-      useKeyboardStore.getState().setActiveKey(index);
+      const isModifier = ['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight'].includes(event.code);
+      const isAltGraph = event.getModifierState?.('AltGraph');
+      if (!isModifier && !isAltGraph && (event.metaKey || event.ctrlKey || event.altKey)) return;
+      if (event.code === 'Space') event.preventDefault();
+      if (heldByCode.has(event.code)) return;
+      heldByCode.set(event.code, index);
+      useKeyboardStore.getState().pressKey(index);
       playPhysicalClick();
     }
     function onKeyUp(event) {
-      const index = KEYBOARD_KEYS.findIndex((key) => key.label === keyLabel(event));
-      if (index >= 0 && useKeyboardStore.getState().activeKey === index) useKeyboardStore.getState().setActiveKey(null);
+      const index = heldByCode.get(event.code);
+      if (index !== undefined) {
+        heldByCode.delete(event.code);
+        useKeyboardStore.getState().releaseKey(index);
+      }
     }
+    function releaseAll() {
+      heldByCode.clear();
+      useKeyboardStore.getState().clearPressedKeys();
+    }
+    function onVisibilityChange() { if (document.visibilityState === 'hidden') releaseAll(); }
+    function onCompositionStart() { composing = true; releaseAll(); }
+    function onCompositionEnd() { composing = false; }
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', releaseAll);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('compositionstart', onCompositionStart);
+    document.addEventListener('compositionend', onCompositionEnd);
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', releaseAll);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      document.removeEventListener('compositionstart', onCompositionStart);
+      document.removeEventListener('compositionend', onCompositionEnd);
     };
   }, []);
 
+  const currentLayer = LAYER_DETAILS.find((layer) => layer.name === isolatedLayer) ?? LAYER_DETAILS[0];
+  const currentLayerIndex = LAYER_DETAILS.findIndex((layer) => layer.name === currentLayer.name);
+  const currentCase = CASE_FINISHES.find((finish) => finish.color === caseColor)?.name ?? 'Custom';
+
   useEffect(() => {
-    gsap.fromTo('.hero-copy > *', { y: 14, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.09, duration: 0.8, ease: 'power3.out' });
-    gsap.fromTo('.control-card', { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, delay: 0.15, ease: 'power2.out' });
+    gsap.fromTo('.layer-info-card, .customize-panel, .explode-panel', { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.65, stagger: 0.08, ease: 'power2.out' });
   }, []);
 
   return <main className="world-shell" ref={shell}>
     <div className="grain" aria-hidden="true" />
     <header className="topbar">
-      <a className="brand" href="/" aria-label="Elsewhere home"><span className="brand-mark">e</span><span>elsewhere<span className="brand-dot">.</span></span></a>
-      <nav className="main-nav" aria-label="Main navigation">
-        <button className="nav-link active" onClick={() => setShowWorlds(false)}>World 01</button>
-        <button className="nav-link" onClick={() => setShowWorlds((v) => !v)}>Explore worlds <span className="nav-count">03</span></button>
-      </nav>
+      <div className="brand-lockup">
+        <a className="brand" href="/" aria-label="Elsewhere home">elsewhere<span className="brand-dot">.</span></a>
+        <span className="board-badge">65%</span>
+        <p>Mechanical Garden <span>·</span> Pull it apart, one layer at a time</p>
+      </div>
       <div className="top-actions">
-        <a className="text-link wireframe-link" href="/wireframes/index.html">Wireframe archive <span aria-hidden="true">↗</span></a>
-        <button className="icon-btn sound-top" onClick={() => setSoundEnabled(!soundEnabled)} aria-label={soundEnabled ? 'Mute keyboard sound' : 'Enable keyboard sound'} title="Keyboard sound">{soundEnabled ? <SoundIcon /> : <MutedIcon />}</button>
-        <button className="avatar" onClick={() => setShowSettings(true)} aria-label="Open world settings">D</button>
+        <button className={`icon-btn sound-top ${soundEnabled ? 'sound-on' : ''}`} onClick={() => setSoundEnabled(!soundEnabled)} aria-label={soundEnabled ? 'Mute keyboard sound' : 'Enable keyboard sound'} title="Keyboard sound">{soundEnabled ? <SoundIcon /> : <MutedIcon />}</button>
+        <div className="sound-toggle" role="group" aria-label="Key sound type">{['Thock', 'Clack'].map((type) => <button key={type} className={soundType === type ? 'selected' : ''} onClick={() => setSoundType(type)} aria-pressed={soundType === type}>{type}</button>)}</div>
+        <button className="worlds-toggle" onClick={() => setShowWorlds(true)}>Worlds <span>03</span></button>
+        <button className={`customize-toggle ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings((v) => !v)}><span>☷</span> Customize</button>
       </div>
     </header>
 
     <section className="scene-stage" aria-label="Interactive Mechanical Garden 3D world">
       <div className="scene-aura" />
-      <div className="scene-label"><span className="live-dot" /> INTERACTIVE OBJECT STUDY <span className="label-separator">/</span> WORLD 01</div>
       <div className="canvas-wrap"><KeyboardScene /></div>
-      <div className="scene-orbit-copy"><span>FIG. 01</span><span className="orbit-line"/><span>MECH / 75%</span></div>
-      <div className="scene-index">0<span>1</span><i> — </i>0<span>3</span></div>
-      <div className="gesture-hint"><span className="mouse-icon" /><span>DRAG TO ROTATE<br /><small>SCROLL TO EXPLORE</small></span></div>
-
-      <div className="hero-copy">
-        <p className="eyebrow"><span className="eyebrow-line" />{worlds[0].category}</p>
-        <h1>Mechanical<br /><em>Garden</em></h1>
-        <p className="hero-description">{worlds[0].description}</p>
-        <div className="hero-actions">
-          <button className="primary-btn" onClick={() => setShowSettings((v) => !v)}><span className="sparkle">✳</span> Customize this world <span className="btn-arrow">↗</span></button>
-          <button className="quiet-btn" onClick={() => setSoundEnabled(!soundEnabled)}><span className="sound-bars" aria-hidden="true"><i/><i/><i/><i/></span>{soundEnabled ? 'Sound on' : 'Sound off'}</button>
-        </div>
-      </div>
-
-      <div className="control-card">
-        <div className="card-heading"><div><span className="eyebrow">LIVE INTERACTION</span><h2>{selected === null ? 'Find your key' : `Key ${selected + 1} · lifted`}</h2></div><span className="keyboard-glyph">⌘<b>K</b></span></div>
-        <p className="card-description">{selected === null ? 'Hover or press a physical key to reveal the switch.' : 'The cap lifts above its spring and switch housings.'}</p>
-        <div className="interaction-rule" />
-        <div className="card-footer"><span className="status-dot" /> <span>{selected === null ? 'WORLD IS LISTENING' : 'SWITCH EXPOSED'}</span><span className="card-footer-right">{selected === null ? '01 / 03' : 'ACTIVE'}</span></div>
-      </div>
-
-      <div className="bottom-bar">
-        <div className="world-name"><span className="world-number">01</span><span className="world-sep"/><span><b>Mechanical Garden</b><small>OBJECT STUDY · 4 MIN</small></span></div>
-        <div className="progress-area explode-control"><div className="progress-label"><span>EXPLODED VIEW</span><span>{explodeStage}<i> / 100</i></span></div><input className="explode-slider" type="range" min="0" max="100" step="1" value={explodeStage} style={{ background: `linear-gradient(90deg,#d0b591 0%,#d0b591 ${explodeStage}%,#464a54 ${explodeStage}%,#464a54 100%)` }} onChange={(e) => setExplodeStage(Number(e.target.value))} aria-label="Continuous exploded view, 0 to 100" /><div className="slider-caption"><span>ASSEMBLED</span><span>DISASSEMBLED</span></div></div>
-        <button className="next-world" onClick={() => setShowWorlds(true)} aria-label="Browse other worlds">NEXT WORLD <span>→</span></button>
+      <aside className="layer-info-card">
+        <div className="layer-card-kicker"><span>Layer {currentLayerIndex + 1} of 6</span><span className="layer-card-arrows">⌃ <b>⌄</b></span></div>
+        <h1>{currentLayer.name}</h1>
+        <div className="layer-facts"><span>Key count</span><b>{KEYBOARD_KEYS.length} keys</b><span>Profile</span><b>{currentLayer.name === 'Keycaps' ? 'XDA · one height' : '65% · compact'}</b><span>Legends</span><b>{currentLayer.name === 'Keycaps' ? 'Dye-sublimated' : currentLayer.detail.split(' · ')[0]}</b></div>
+        <p>{currentLayer.detail}. Each layer stays aligned as the board comes apart.</p>
+        <button className="show-layers" onClick={() => setIsolatedLayer('All layers')}>Show all layers</button>
+      </aside>
+      <nav className="layer-rail" aria-label="Keyboard assembly layers">{LAYER_DETAILS.map((layer, index) => <button key={layer.name} className={isolatedLayer === layer.name ? 'selected' : ''} onClick={() => setIsolatedLayer(isolatedLayer === layer.name ? 'All layers' : layer.name)} aria-pressed={isolatedLayer === layer.name}><span className="layer-rail-number">{index + 1}</span><span>{layer.name}</span></button>)}</nav>
+      <div className="interaction-hint">{selected === null ? 'Type on your keyboard · drag to turn' : `${KEYBOARD_KEYS[selected]?.label ?? ''} key · switch exposed`}</div>
+      <div className="explode-panel">
+        <div className="explode-heading"><strong>Explode</strong><span>Sliding the case out</span><b>{explodeStage}%</b></div>
+        <input className="explode-slider" type="range" min="0" max="100" step="1" value={explodeStage} style={{ background: `linear-gradient(90deg,#8b73dd 0%,#8b73dd ${explodeStage}%,#ded8ed ${explodeStage}%,#ded8ed 100%)` }} onChange={(e) => setExplodeStage(Number(e.target.value))} aria-label="Continuous exploded view, 0 to 100" />
+        <div className="slider-caption"><span>Built</span><span>Caps</span><span>Switches</span><span>Plate</span><span>Foam</span><span>PCB</span><span>Case</span></div>
       </div>
     </section>
 
-    {showSettings && <aside className="settings-drawer" aria-label="World customization">
-      <div className="drawer-head"><div><p className="eyebrow">MAKE IT YOURS</p><h2>World settings</h2></div><button className="close-btn" onClick={() => setShowSettings(false)} aria-label="Close settings">×</button></div>
-      <label className="field-label" htmlFor="palette-select">Keycap palette</label>
-      <div className="palette-options" id="palette-select">{Object.entries(KEYBOARD_PALETTES).map(([name, colors]) => <button key={name} className={`palette-option ${palette === name ? 'selected' : ''}`} onClick={() => setPalette(name)} aria-pressed={palette === name}>
-        <span className="swatches"><i style={{ background: colors.key }} /><i style={{ background: colors.accent }} /><i style={{ background: colors.board }} /></span><span>{name}</span>{palette === name && <span className="check">✓</span>}
+    {showSettings && <aside className="settings-drawer customize-panel" aria-label="Customize keyboard">
+      <div className="drawer-head"><div><p className="eyebrow">CUSTOMIZE</p><h2>Customize</h2></div><button className="close-btn" onClick={() => setShowSettings(false)} aria-label="Close customization">×</button></div>
+      <label className="field-label" htmlFor="palette-select">Keycaps <span>{palette}</span></label>
+      <div className="palette-options" id="palette-select" role="group" aria-label="Keycap palette">{Object.entries(KEYBOARD_PALETTES).map(([name, colors]) => <button key={name} className={`palette-option ${palette === name ? 'selected' : ''}`} onClick={() => setPalette(name)} aria-pressed={palette === name}>
+        <span className="swatches"><i style={{ background: colors.key }} /><i style={{ background: colors.accent }} /><i style={{ background: colors.board }} /></span><span>{name}</span>
       </button>)}</div>
-      <label className="field-label case-label">Case finish</label>
-      <div className="case-swatches" role="group" aria-label="Case finish">{CASE_FINISHES.map((finish) => <button key={finish.name} className={`case-swatch ${caseColor === finish.color ? 'selected' : ''}`} style={{ '--swatch': finish.color }} onClick={() => setCaseColor(finish.color)} aria-label={finish.name} aria-pressed={caseColor === finish.color}><span>{finish.name}</span></button>)}</div>
-      <label className="field-label isolate-label">Isolate a layer</label>
-      <div className="layer-options">{ASSEMBLY_LAYERS.map((layer) => <button key={layer} className={isolatedLayer === layer ? 'selected' : ''} onClick={() => setIsolatedLayer(layer)} aria-pressed={isolatedLayer === layer}>{layer}</button>)}</div>
-      <p className="field-help">Click a part in the scene to isolate it. Double-click a keycap so a single click can still press it. Other layers stay visible as a 15% ghost.</p>
-      <div className="field-row"><label className="field-label" htmlFor="travel">Switch travel</label><span className="field-value">{Math.round(travel * 4.2)} mm</span></div>
-      <input id="travel" className="travel-slider" type="range" min="0" max="1" step="0.01" value={travel} onChange={(e) => setTravel(Number(e.target.value))} />
-      <p className="field-help">Adjust the keyboard angle and feel of the interaction.</p>
-      <div className="field-row sound-heading"><label className="field-label">Key sound</label><span className="field-value">{soundType.toUpperCase()}</span></div>
-      <div className="sound-options">{['Thock', 'Clack'].map((type) => <button key={type} className={soundType === type ? 'selected' : ''} onClick={() => setSoundType(type)} aria-pressed={soundType === type}>{type}<small>{type === 'Thock' ? 'LOW + MUTED' : 'BRIGHT + CRISP'}</small></button>)}</div>
-      <div className="drawer-note"><span>✳</span><p>Hover each key to see how the switch works beneath it.</p></div>
+      <div className="customize-section case-section"><label className="field-label">Case <span>{currentCase}</span></label>
+        <div className="case-swatches" role="group" aria-label="Case color">{CASE_FINISHES.map((finish) => <button key={finish.name} className={`case-swatch ${caseColor === finish.color ? 'selected' : ''}`} style={{ '--swatch': finish.color }} onClick={() => setCaseColor(finish.color)} aria-label={finish.name} aria-pressed={caseColor === finish.color} title={finish.name} />)}</div>
+      </div>
+      <div className="customize-section plate-section"><label className="field-label">Plate <span>{plateFinish}</span></label>
+        <div className="plate-options" role="group" aria-label="Plate material">{Object.keys(PLATE_FINISHES).map((finish) => <button key={finish} className={plateFinish === finish ? 'selected' : ''} onClick={() => setPlateFinish(finish)} aria-pressed={plateFinish === finish}>{finish}</button>)}</div>
+      </div>
+      <div className="customize-section travel-section"><div className="field-row"><label className="field-label" htmlFor="travel">Switch travel</label><span className="field-value">{(travel * 4.2).toFixed(1)} mm</span></div>
+        <input id="travel" className="travel-slider" type="range" min="0" max="1" step="0.01" value={travel} onChange={(e) => setTravel(Number(e.target.value))} />
+      </div>
+      <p className="field-help">Pick a layer on the left to isolate it. The others stay visible as 15% ghosts.</p>
     </aside>}
 
     {showWorlds && <div className="worlds-backdrop" onClick={() => setShowWorlds(false)}>
