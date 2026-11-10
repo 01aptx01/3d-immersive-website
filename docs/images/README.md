@@ -5,6 +5,7 @@ These images accompany the root [README](../../README.md). Application images ar
 ## Capture context
 
 - **Source revision:** `b8c035017b37993e7b7b452120d7f5da8c32362c`.
+- **Subsequent compatibility review:** `4bf8008c47913d0a75743eb135fb61b29887b16f`. Its pavilion instancing, interaction, shadow, and short-landscape improvements are preserved and documented. These captures record the earlier revision above, whose illustrated subjects and assembly sequence remain applicable.
 - **Capture date:** 11 November 2026, Asia/Bangkok.
 - **Local application:** Vite development server at `http://localhost:5173`.
 - **Browser:** Chromium, automated with Playwright, using a WebGL 2 software renderer in the capture environment.

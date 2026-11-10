@@ -29,6 +29,7 @@ function Site({ windStrength, nightFactor }) {
   const leafMatrix = useRef(new THREE.Matrix4());
   const leafQuaternion = useRef(new THREE.Quaternion());
   const leafPosition = useRef(new THREE.Vector3());
+  const leafEuler = useRef(new THREE.Euler());
   const leafScale = useRef(new THREE.Vector3(0.035, 0.38, 0.09));
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   useLayoutEffect(() => {
@@ -75,7 +76,8 @@ function Site({ windStrength, nightFactor }) {
     leafInstances.forEach((leaf, i) => {
       const sway = windStrength * 0.12;
       leafPosition.current.set(leaf.x + Math.sin(t * 0.7 + i * 0.31) * sway, leaf.y, leaf.z + Math.cos(t * 0.55 + i * 0.2) * sway * 0.7);
-      leafQuaternion.current.setFromEuler(new THREE.Euler(leaf.rotation[0] + Math.sin(t * 0.8 + i) * sway, leaf.rotation[1], leaf.rotation[2] + Math.cos(t * 0.6 + i * 0.4) * sway));
+      leafEuler.current.set(leaf.rotation[0] + Math.sin(t * 0.8 + i) * sway, leaf.rotation[1], leaf.rotation[2] + Math.cos(t * 0.6 + i * 0.4) * sway);
+      leafQuaternion.current.setFromEuler(leafEuler.current);
       leafMatrix.current.compose(leafPosition.current, leafQuaternion.current, leafScale.current);
       leavesRef.current.setMatrixAt(i, leafMatrix.current);
     });
@@ -122,6 +124,7 @@ function FallingLeaves({ windStrength }) {
   const matrix = useRef(new THREE.Matrix4());
   const position = useRef(new THREE.Vector3());
   const quaternion = useRef(new THREE.Quaternion());
+  const euler = useRef(new THREE.Euler());
   const scale = useRef(new THREE.Vector3(0.16, 0.035, 0.075));
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   useLayoutEffect(() => {
@@ -142,7 +145,8 @@ function FallingLeaves({ windStrength }) {
     items.forEach((item, i) => {
       const fall = (t * item.speed * (0.65 + windStrength * 0.55) + item.seed) % 8;
       position.current.set(item.x + Math.sin(t * 0.7 + item.seed) * windStrength * 0.7, 7.2 - fall, item.z + Math.cos(t * 0.54 + item.seed) * windStrength * 0.5);
-      quaternion.current.setFromEuler(new THREE.Euler(0.3 + Math.sin(t * 1.7 + item.seed) * 0.8, t * 0.35 + item.seed, Math.cos(t * 1.3 + item.seed) * 0.7));
+      euler.current.set(0.3 + Math.sin(t * 1.7 + item.seed) * 0.8, t * 0.35 + item.seed, Math.cos(t * 1.3 + item.seed) * 0.7);
+      quaternion.current.setFromEuler(euler.current);
       matrix.current.compose(position.current, quaternion.current, scale.current);
       meshRef.current.setMatrixAt(i, matrix.current);
     });
@@ -216,7 +220,7 @@ function Frame() {
 
 const JOINT_POSITIONS = [-2, 0, 2].flatMap((x) => [-1.65, 1.65].map((z) => [x, z]));
 
-function JointPieces({ index, jointCount, jointRefs, onReplay }) {
+function JointPieces({ index, jointCount, jointRefs, onReplay, showMarkers }) {
   const tenon = useRef();
   const wedge = useRef();
   const [x, z] = JOINT_POSITIONS[index];
@@ -234,15 +238,15 @@ function JointPieces({ index, jointCount, jointRefs, onReplay }) {
     <mesh ref={wedge} castShadow><boxGeometry args={[0.26, 0.065, 0.09]} /><meshStandardMaterial color="#e0b77d" roughness={0.72} /></mesh>
     <mesh position={[0.39, -0.07, 0]} castShadow><boxGeometry args={[0.46, 0.14, 0.38]} /><meshStandardMaterial color="#b17c51" roughness={0.78} /></mesh>
     <mesh position={[-0.39, -0.07, 0]} castShadow><boxGeometry args={[0.46, 0.14, 0.38]} /><meshStandardMaterial color="#b17c51" roughness={0.78} /></mesh>
-    {index < jointCount && <Html position={[0, 0.56, 0]} center distanceFactor={11}>
+    {showMarkers && index < jointCount && <Html position={[0, 0.56, 0]} center distanceFactor={11}>
       <button className="kigumi-joint-marker" onClick={(event) => { event.stopPropagation(); onReplay(index); }} aria-label={`Replay ${JOINT_DETAILS[index].name}`} title={`Replay ${JOINT_DETAILS[index].name}`}>{String(index + 1).padStart(2, '0')}</button>
     </Html>}
   </group>;
 }
 
-function Joinery({ jointCount, jointRefs, onReplay }) {
+function Joinery({ jointCount, jointRefs, onReplay, showMarkers }) {
   return <group>
-    {JOINT_POSITIONS.map((_, i) => <JointPieces key={i} index={i} jointCount={jointCount} jointRefs={jointRefs} onReplay={onReplay} />)}
+    {JOINT_POSITIONS.map((_, i) => <JointPieces key={i} index={i} jointCount={jointCount} jointRefs={jointRefs} onReplay={onReplay} showMarkers={showMarkers} />)}
     <Beam position={[0, 3.18, 1.94]} size={[4.98, 0.13, 0.18]} color="#bb8757" />
   </group>;
 }
@@ -370,11 +374,27 @@ function RoofShell() {
     }
     return result;
   }, []);
+  const tileMesh = useRef();
+  useLayoutEffect(() => {
+    if (!tileMesh.current) return;
+    const dummy = new THREE.Object3D();
+    tiles.forEach(([x, y, z, end], i) => {
+      dummy.position.set(x, y, z);
+      if (end) dummy.rotation.set(0, 0, end * 0.5);
+      else dummy.rotation.set(z > 0 ? -0.36 : 0.36, 0, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      tileMesh.current.setMatrixAt(i, dummy.matrix);
+      tileMesh.current.setColorAt(i, new THREE.Color(i % 5 === 0 ? '#454143' : TILE));
+    });
+    tileMesh.current.instanceMatrix.needsUpdate = true;
+    if (tileMesh.current.instanceColor) tileMesh.current.instanceColor.needsUpdate = true;
+  }, [tiles]);
   return <group>
     <mesh geometry={geometry} castShadow receiveShadow><meshStandardMaterial color="#493d35" side={THREE.DoubleSide} roughness={0.92} /></mesh>
-    {tiles.map(([x, y, z, end], i) => <mesh key={i} position={[x, y, z]} rotation={end ? [0, 0, end * 0.5] : [(z > 0 ? -0.36 : 0.36), 0, 0]} castShadow>
-      <boxGeometry args={[0.42, 0.09, 0.34]} /><meshStandardMaterial color={i % 5 === 0 ? '#454143' : TILE} roughness={0.86} />
-    </mesh>)}
+    <instancedMesh ref={tileMesh} args={[null, null, tiles.length]} castShadow receiveShadow>
+      <boxGeometry args={[0.42, 0.09, 0.34]} /><meshStandardMaterial color="#ffffff" roughness={0.86} />
+    </instancedMesh>
     <mesh position={[0, 3.95, 0]}><sphereGeometry args={[0.14, 12, 8]} /><meshStandardMaterial color="#4b3930" roughness={0.7} /></mesh>
   </group>;
 }
@@ -401,14 +421,14 @@ function Pavilion({ stage, jointCount, jointRefs, onReplay }) {
     <AssemblyStage complete={stage >= 0} offset={-0.55}><Foundation /></AssemblyStage>
     <AssemblyStage complete={stage >= 1} offset={2}><Pillars /></AssemblyStage>
     <AssemblyStage complete={stage >= 2} offset={2}><Frame /></AssemblyStage>
-    <AssemblyStage complete={stage >= 3} offset={1.2}><Joinery jointCount={jointCount} jointRefs={jointRefs} onReplay={onReplay} /></AssemblyStage>
+    <AssemblyStage complete={stage >= 3} offset={1.2}><Joinery jointCount={jointCount} jointRefs={jointRefs} onReplay={onReplay} showMarkers={stage >= 3} /></AssemblyStage>
     <AssemblyStage complete={stage >= 4} offset={2}><Rafters /></AssemblyStage>
     <AssemblyStage complete={stage >= 5} offset={2.3}><RoofShell /></AssemblyStage>
     <AssemblyStage complete={stage >= 6} offset={2}><Shoji /></AssemblyStage>
   </group>;
 }
 
-function SceneContents({ stage, jointCount, selectedJoint, jointRunId, jointMode, jointRefs, controlsRef, timeOfDay, progress, onReplay, onPhase, onFinish }) {
+function SceneContents({ stage, jointCount, selectedJoint, jointRunId, jointMode, jointAnimating, jointRefs, controlsRef, timeOfDay, progress, assemblySwipe, onReplay, onPhase, onFinish }) {
   const nightFactor = Math.max(0, Math.min(1, (timeOfDay - 55) / 45));
   const skyColor = new THREE.Color('#c9c2b2').lerp(new THREE.Color('#d29b77'), Math.min(1, timeOfDay / 50));
   if (timeOfDay > 50) skyColor.lerp(new THREE.Color('#1d2737'), (timeOfDay - 50) / 50);
@@ -421,19 +441,19 @@ function SceneContents({ stage, jointCount, selectedJoint, jointRunId, jointMode
     <fog attach="fog" args={[skyColor, 11, 33]} />
     <ambientLight intensity={0.8 - nightFactor * 0.5} color={sunColor} />
     <hemisphereLight intensity={1.25 - nightFactor * 0.5} color={sunColor} groundColor={nightFactor > 0.5 ? '#272b32' : '#55534a'} />
-    <directionalLight castShadow position={lightPosition} intensity={3.0 - nightFactor * 2.35} color={sunColor} shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12} shadow-bias={-0.0002} />
+    <directionalLight castShadow position={lightPosition} intensity={3.0 - nightFactor * 2.35} color={sunColor} shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12} shadow-bias={-0.0002} />
     <Site windStrength={windStrength} nightFactor={nightFactor} />
     <Pavilion stage={stage} jointCount={jointCount} jointRefs={jointRefs} onReplay={onReplay} />
-    <ContactShadows position={[0, -0.09, 0]} opacity={0.35} scale={17} blur={2.6} far={5} />
-    <OrbitControls ref={controlsRef} makeDefault target={[0, 1.6, 0]} minDistance={5} maxDistance={19} maxPolarAngle={Math.PI * 0.49} enableDamping dampingFactor={0.06} />
+    <ContactShadows key={`${stage}-${jointCount}-${jointRunId}`} position={[0, -0.09, 0]} opacity={0.35} scale={17} resolution={128} blur={1.8} far={5} frames={48} smooth={false} />
+    <OrbitControls ref={controlsRef} makeDefault enabled={!assemblySwipe && !jointAnimating} target={[0, 1.6, 0]} minDistance={5} maxDistance={19} maxPolarAngle={Math.PI * 0.49} enableDamping dampingFactor={0.06} />
     <JointCinematic runId={jointRunId} selectedJoint={selectedJoint} jointMode={jointMode} jointRefs={jointRefs} controlsRef={controlsRef} onPhase={onPhase} onFinish={onFinish} />
   </>;
 }
 
-export default function KigumiScene({ stage, jointCount, selectedJoint, jointRunId, jointMode, timeOfDay, progress, onReplay, onPhase, onFinish, onRendererCanvas }) {
+export default function KigumiScene({ stage, jointCount, selectedJoint, jointRunId, jointMode, jointAnimating, timeOfDay, progress, assemblySwipe, onReplay, onPhase, onFinish, onRendererCanvas }) {
   const jointRefs = useRef([]);
   const controlsRef = useRef();
   return <Canvas shadows dpr={[1, 1.5]} camera={{ position: [9.3, 7.1, 10.5], fov: 37, near: 0.1, far: 120 }} gl={{ antialias: true, powerPreference: 'high-performance' }} onCreated={({ gl }) => onRendererCanvas?.(gl.domElement)}>
-    <SceneContents stage={stage} jointCount={jointCount} selectedJoint={selectedJoint} jointRunId={jointRunId} jointMode={jointMode} jointRefs={jointRefs} controlsRef={controlsRef} timeOfDay={timeOfDay} progress={progress} onReplay={onReplay} onPhase={onPhase} onFinish={onFinish} />
+    <SceneContents stage={stage} jointCount={jointCount} selectedJoint={selectedJoint} jointRunId={jointRunId} jointMode={jointMode} jointAnimating={jointAnimating} jointRefs={jointRefs} controlsRef={controlsRef} timeOfDay={timeOfDay} progress={progress} assemblySwipe={assemblySwipe} onReplay={onReplay} onPhase={onPhase} onFinish={onFinish} />
   </Canvas>;
 }

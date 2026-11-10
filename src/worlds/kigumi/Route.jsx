@@ -86,10 +86,12 @@ export default function KigumiRoute() {
   const holdFrame = useRef(0);
   const holdStarted = useRef(0);
   const holdActive = useRef(false);
+  const holdPointerId = useRef(null);
   const gestureStart = useRef(null);
   const lastGesture = useRef(0);
   const [holdProgress, setHoldProgress] = useState(0);
   const [timeOfDay, setTimeOfDay] = useState(0);
+  const [assemblySwipe, setAssemblySwipe] = useState(false);
   const [webglStatus, setWebglStatus] = useState(() => preflightWebGL2() ? 'ready' : 'unsupported');
   const [rendererCanvas, setRendererCanvas] = useState(null);
   const windAudio = useRef(null);
@@ -104,6 +106,7 @@ export default function KigumiRoute() {
     if (holdFrame.current) cancelAnimationFrame(holdFrame.current);
     holdFrame.current = 0;
     holdActive.current = false;
+    holdPointerId.current = null;
     setHoldProgress(0);
   }, []);
   const startHold = useCallback((event) => {
@@ -112,6 +115,7 @@ export default function KigumiRoute() {
     event?.preventDefault?.();
     stopHold();
     holdActive.current = true;
+    holdPointerId.current = Number.isInteger(event?.pointerId) ? event.pointerId : null;
     holdStarted.current = performance.now();
     const tick = (now) => {
       const value = Math.min(1, (now - holdStarted.current) / 850);
@@ -126,9 +130,20 @@ export default function KigumiRoute() {
     holdFrame.current = requestAnimationFrame(tick);
   }, [stopHold]);
 
-  useEffect(() => () => {
-    if (holdFrame.current) cancelAnimationFrame(holdFrame.current);
-  }, []);
+  useEffect(() => {
+    const endPointerHold = (event) => {
+      if (holdActive.current && holdPointerId.current !== null && event.pointerId === holdPointerId.current) stopHold();
+    };
+    window.addEventListener('pointerup', endPointerHold);
+    window.addEventListener('pointercancel', endPointerHold);
+    return () => {
+      window.removeEventListener('pointerup', endPointerHold);
+      window.removeEventListener('pointercancel', endPointerHold);
+      if (holdFrame.current) cancelAnimationFrame(holdFrame.current);
+      holdActive.current = false;
+      holdPointerId.current = null;
+    };
+  }, [stopHold]);
 
   useEffect(() => {
     if (!rendererCanvas) return undefined;
@@ -157,17 +172,36 @@ export default function KigumiRoute() {
       }
     };
     const onTouchStart = (event) => {
+      if (event.touches?.length !== 1) {
+        gestureStart.current = null;
+        setAssemblySwipe(false);
+        return;
+      }
       const touch = event.touches?.[0];
-      if (touch) gestureStart.current = { x: touch.clientX, y: touch.clientY };
+      if (touch) gestureStart.current = { x: touch.clientX, y: touch.clientY, capturesAssembly: false };
+    };
+    const onTouchMove = (event) => {
+      const start = gestureStart.current;
+      const touch = event.touches?.[0];
+      if (!start || !touch || event.touches.length !== 1) return;
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      if (Math.abs(dy) > 16 && Math.abs(dy) > Math.abs(dx) * 1.2) {
+        if (!start.capturesAssembly) setAssemblySwipe(true);
+        start.capturesAssembly = true;
+        event.preventDefault();
+        event.stopPropagation();
+      }
     };
     const onTouchEnd = (event) => {
       const start = gestureStart.current;
       const touch = event.changedTouches?.[0];
       gestureStart.current = null;
+      setAssemblySwipe(false);
       if (!start || !touch) return;
       const dx = touch.clientX - start.x;
       const dy = touch.clientY - start.y;
-      if (Math.abs(dy) < 48 || Math.abs(dy) < Math.abs(dx) * 1.15) return;
+      if (!start.capturesAssembly || Math.abs(dy) < 48 || Math.abs(dy) < Math.abs(dx) * 1.15) return;
       const now = performance.now();
       if (now - lastGesture.current < 480) return;
       lastGesture.current = now;
@@ -177,13 +211,21 @@ export default function KigumiRoute() {
         if (state.stage > 0) state.setStage(state.stage - 1);
       }
     };
+    const onTouchCancel = () => {
+      gestureStart.current = null;
+      setAssemblySwipe(false);
+    };
     node.addEventListener('wheel', onWheel, { capture: true, passive: false });
     node.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
+    node.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
     node.addEventListener('touchend', onTouchEnd, { capture: true, passive: true });
+    node.addEventListener('touchcancel', onTouchCancel, { capture: true, passive: true });
     return () => {
       node.removeEventListener('wheel', onWheel, true);
       node.removeEventListener('touchstart', onTouchStart, true);
+      node.removeEventListener('touchmove', onTouchMove, true);
       node.removeEventListener('touchend', onTouchEnd, true);
+      node.removeEventListener('touchcancel', onTouchCancel, true);
     };
   }, []);
 
@@ -225,7 +267,7 @@ export default function KigumiRoute() {
 
   return <main className="kigumi-shell" aria-label="Kigumi Pavilion assembly world">
     <div className="kigumi-scene" ref={sceneRef}>
-      {webglStatus === 'ready' ? <RendererErrorBoundary onFailure={onRendererFailure}><KigumiScene stage={stage} jointCount={jointCount} selectedJoint={selectedJoint} jointRunId={jointRunId} jointMode={jointMode} timeOfDay={timeOfDay} progress={progress} onReplay={beginJointReplay} onPhase={setJointPhase} onFinish={finishJoint} onRendererCanvas={onRendererCanvas} /></RendererErrorBoundary> : <PavilionFallback reason={webglStatus} />}
+      {webglStatus === 'ready' ? <RendererErrorBoundary onFailure={onRendererFailure}><KigumiScene stage={stage} jointCount={jointCount} selectedJoint={selectedJoint} jointRunId={jointRunId} jointMode={jointMode} jointAnimating={jointAnimating} timeOfDay={timeOfDay} progress={progress} assemblySwipe={assemblySwipe} onReplay={beginJointReplay} onPhase={setJointPhase} onFinish={finishJoint} onRendererCanvas={onRendererCanvas} /></RendererErrorBoundary> : <PavilionFallback reason={webglStatus} />}
     </div>
     <div className="kigumi-grain" aria-hidden="true" />
 
@@ -243,7 +285,7 @@ export default function KigumiRoute() {
 
     <nav className="kigumi-stage-rail" aria-label="Pavilion assembly stages">
       <p className="kigumi-rail-title">ASSEMBLY SEQUENCE</p>
-      {ASSEMBLY_STAGES.map((item, index) => <button key={item.id} className={`kigumi-stage-button ${index === stage ? 'active' : ''} ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : ''}`} onClick={() => setStage(index)} disabled={index > furthestStage} aria-current={index === stage ? 'step' : undefined} aria-label={`${item.title}, ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : index === stage ? 'current stage' : 'locked until earlier stages are assembled'}`}>
+      {ASSEMBLY_STAGES.map((item, index) => <button key={item.id} className={`kigumi-stage-button ${index === stage ? 'active' : ''} ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : ''}`} onClick={() => setStage(index)} disabled={jointAnimating || index > furthestStage} aria-current={index === stage ? 'step' : undefined} aria-label={`${item.title}, ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : index === stage ? 'current stage' : 'locked until earlier stages are assembled'}`}>
         <span className="kigumi-stage-number">{String(index + 1).padStart(2, '0')}</span>
         <span><b>{item.title}</b><small>{item.subtitle}</small></span>
         <i aria-hidden="true">{index < stage ? '✓' : '·'}</i>
@@ -260,9 +302,9 @@ export default function KigumiRoute() {
     </aside>
 
     <div className="kigumi-controls" aria-label="Assembly navigation">
-      <button className="kigumi-previous-button" onClick={() => setStage(Math.max(-1, stage - 1))} disabled={stage < 0} aria-label="Previous assembly stage">←</button>
+      <button className="kigumi-previous-button" onClick={() => setStage(Math.max(-1, stage - 1))} disabled={stage < 0 || jointAnimating} aria-label="Previous assembly stage">←</button>
       <div aria-live="polite" aria-atomic="true"><small>{stage < 0 ? 'READY TO BUILD' : `STAGE ${String(stage + 1).padStart(2, '0')} / 07`}</small><b>{stage < 0 ? 'Foundation stones' : currentStage.title}</b></div>
-      <button className={`kigumi-build-button ${holdProgress > 0 ? 'holding' : ''}`} onPointerDown={(event) => { event.currentTarget.setPointerCapture?.(event.pointerId); startHold(event); }} onPointerUp={stopHold} onPointerCancel={stopHold} onPointerLeave={stopHold} onKeyDown={(event) => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) startHold(event); }} onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') stopHold(); }} onBlur={stopHold} disabled={jointAnimating || stage === 6 || webglStatus !== 'ready'} aria-label={buildLabel} aria-describedby="build-help" aria-keyshortcuts="Space Enter">
+      <button className={`kigumi-build-button ${holdProgress > 0 ? 'holding' : ''}`} onPointerDown={(event) => { try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* Global pointer listeners cover capture failures. */ } startHold(event); }} onPointerCancel={stopHold} onLostPointerCapture={stopHold} onKeyDown={(event) => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) startHold(event); }} onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') stopHold(); }} onBlur={stopHold} disabled={jointAnimating || stage === 6 || webglStatus !== 'ready'} aria-label={buildLabel} aria-describedby="build-help" aria-keyshortcuts="Space Enter">
         <span className="kigumi-hold-progress" style={{ transform: `scaleX(${holdProgress})` }} />
         <span>{stage === 6 ? '✓' : holdProgress > 0 ? 'HOLD' : 'BUILD'}</span>
       </button>

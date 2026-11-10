@@ -139,6 +139,8 @@ The geometry is an **illustrative through-tenon and cross-wedge study**. It is n
 
 Move **Time of day** from dawn through sunset to night. Optional garden wind starts muted and uses a locally bundled, generated OGG loop through Howler.js. Geometry and materials are procedural; the pavilion does not ship with source texture packs or KTX2 textures.
 
+For rendering efficiency, bamboo foliage, falling leaves, and **220 roof tiles** use instanced meshes. Contact shadows use a bounded, low-resolution render after assembly changes. The interface also includes a compact layout for short landscape viewports.
+
 ## Design archive
 
 ![The archived full-screen Elsewhere home wireframe with CSS-generated scenery and navigation](docs/images/wireframe-home.jpg)
@@ -214,7 +216,7 @@ Favorites use `localStorage` under `elsewhere.favorites.v2` and are shared betwe
 1. `main.jsx` chooses the pavilion for `?world=kigumi` or the exact path `/world/kigumi`; other values resolve to the keyboard.
 2. React `lazy` and `Suspense` load the selected module with a loading state.
 3. Each world owns its interface, scene, styles, and Zustand store. Controls update state, and scene components reflect those changes.
-4. Repeated keyboard components and garden foliage use instanced meshes. GSAP coordinates timed transitions.
+4. Repeated keyboard components, garden foliage, and pavilion roof tiles use instanced meshes. GSAP coordinates timed transitions.
 5. The pavilion checks WebGL 2 support and handles renderer errors/context loss with an illustrated fallback.
 
 To add a world, create its scene/interface/store, register a lazy import and routing condition in `main.jsx`, and add metadata to `catalog.js`. A catalog entry alone does not create a working route.
