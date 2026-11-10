@@ -2,7 +2,7 @@
 
 An evolving collection of interactive worlds. **Mechanical Garden** explores a custom mechanical keyboard, and **Kigumi Pavilion** guides visitors through an illustrated timber assembly. The earlier home and world directory are preserved as interactive HTML wireframes.
 
-Visit the [published Site](https://elsewhere-keyboard-world.teerananpakdeekhan.chatgpt.site/) or open [World 02 — Kigumi Pavilion](https://elsewhere-keyboard-world.teerananpakdeekhan.chatgpt.site/?world=kigumi) directly.
+Visit the [published Site](https://immersive.teerananpakdeekhan.chatgpt.site/) or open [World 02 — Kigumi Pavilion](https://immersive.teerananpakdeekhan.chatgpt.site/?world=kigumi) directly.
 
 > Status: experimental prototype. The interactive 3D worlds require WebGL 2. Kigumi Pavilion shows an illustrated fallback when the renderer cannot start. Wireframe content and planned worlds are examples, not finished experiences.
 
