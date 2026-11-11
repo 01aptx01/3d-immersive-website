@@ -33,7 +33,7 @@ class RendererErrorBoundary extends React.Component {
   }
 }
 
-function PavilionFallback({ reason }) {
+function PavilionFallback({ reason, jointInterrupted, onRetry }) {
   const explanation = reason === 'context-lost'
     ? 'The browser lost the graphics context while drawing the pavilion.'
     : reason === 'renderer-error'
@@ -56,7 +56,8 @@ function PavilionFallback({ reason }) {
     <section className="kigumi-fallback-card">
       <span className="kigumi-kicker">3D VIEW UNAVAILABLE</span>
       <h2>The pavilion scene could not open</h2>
-      <p>{explanation} The seven-stage sequence remains visible at the left. Try a browser or device with WebGL 2 for the interactive build.</p>
+      <p>{explanation}{jointInterrupted ? ' The unfinished joint was stopped without counting it; retry to continue from that joint.' : ''} Browse the seven stage descriptions at the left, then retry the 3D view when graphics are available.</p>
+      <button className="kigumi-fallback-retry" onClick={onRetry}>Retry 3D view <span aria-hidden="true">↻</span></button>
       <div className="kigumi-fallback-links"><a href="/?world=mechanical-garden">Open World 01 · Mechanical Garden ↗</a><a href="/wireframes/explore.html">Browse the world directory ↗</a></div>
     </section>
   </div>;
@@ -80,8 +81,26 @@ export default function KigumiRoute() {
   const finishJoint = useKigumiStore((state) => state.finishJoint);
   const closeJointInfo = useKigumiStore((state) => state.closeJointInfo);
   const setSoundEnabled = useKigumiStore((state) => state.setSoundEnabled);
-  const onRendererFailure = useCallback(() => setWebglStatus('renderer-error'), []);
+  const [webglStatus, setWebglStatus] = useState(() => preflightWebGL2() ? 'ready' : 'unsupported');
+  const [rendererAttempt, setRendererAttempt] = useState(0);
+  const [fallbackBrowseStage, setFallbackBrowseStage] = useState(() => stage);
+  const [jointInterrupted, setJointInterrupted] = useState(false);
+  const handleRendererFailure = useCallback((reason) => {
+    const current = useKigumiStore.getState();
+    setFallbackBrowseStage(current.stage);
+    setJointInterrupted(current.jointAnimating);
+    current.cancelJointAnimation();
+    setWebglStatus(reason);
+  }, []);
   const onRendererCanvas = useCallback((canvas) => setRendererCanvas(canvas), []);
+  const retryRenderer = useCallback(() => {
+    if (!preflightWebGL2()) {
+      setWebglStatus('unsupported');
+      return;
+    }
+    setRendererAttempt((attempt) => attempt + 1);
+    setWebglStatus('ready');
+  }, []);
   const sceneRef = useRef(null);
   const holdFrame = useRef(0);
   const holdStarted = useRef(0);
@@ -92,15 +111,16 @@ export default function KigumiRoute() {
   const [holdProgress, setHoldProgress] = useState(0);
   const [timeOfDay, setTimeOfDay] = useState(0);
   const [assemblySwipe, setAssemblySwipe] = useState(false);
-  const [webglStatus, setWebglStatus] = useState(() => preflightWebGL2() ? 'ready' : 'unsupported');
   const [rendererCanvas, setRendererCanvas] = useState(null);
   const windAudio = useRef(null);
-  const currentStage = stage < 0 ? {
+  const displayStage = webglStatus === 'ready' ? stage : fallbackBrowseStage;
+  const currentStage = displayStage < 0 ? {
     kicker: 'READY TO BUILD',
     title: 'The garden floor',
     description: 'A quiet site before assembly. Begin with the foundation stones, then build upward through the timber frame and roof.',
-  } : ASSEMBLY_STAGES[stage];
-  const progress = Math.round(((stage === 3 ? 3 + jointCount / 6 : Math.max(0, stage + 1)) / ASSEMBLY_STAGES.length) * 100);
+  } : ASSEMBLY_STAGES[displayStage];
+  const progress = Math.round(((displayStage === 3 ? 3 + jointCount / 6 : Math.max(0, displayStage + 1)) / ASSEMBLY_STAGES.length) * 100);
+  const assembledPosts = stage >= 1 ? 6 : 0;
 
   const stopHold = useCallback(() => {
     if (holdFrame.current) cancelAnimationFrame(holdFrame.current);
@@ -149,11 +169,11 @@ export default function KigumiRoute() {
     if (!rendererCanvas) return undefined;
     const onContextLost = (event) => {
       event.preventDefault();
-      setWebglStatus('context-lost');
+      handleRendererFailure('context-lost');
     };
     rendererCanvas.addEventListener('webglcontextlost', onContextLost);
     return () => rendererCanvas.removeEventListener('webglcontextlost', onContextLost);
-  }, [rendererCanvas]);
+  }, [rendererCanvas, handleRendererFailure]);
 
   useEffect(() => {
     const node = sceneRef.current;
@@ -229,7 +249,7 @@ export default function KigumiRoute() {
     };
   }, []);
 
-  const buildLabel = stage < 0 ? 'Hold to place the foundation' : stage === 3 && jointCount < 6 ? `Hold to fit joint ${jointCount + 1} of 6` : stage === 6 ? 'Pavilion complete' : 'Hold to continue assembly';
+  const buildLabel = displayStage < 0 ? 'Hold to place the foundation' : displayStage === 3 && jointCount < 6 ? `Hold to fit joint ${jointCount + 1} of 6` : displayStage === 6 ? 'Pavilion complete' : 'Hold to continue assembly';
   const timeLabel = timeOfDay < 25 ? 'Dawn' : timeOfDay < 75 ? 'Sunset' : 'Night';
   const clockLabel = timeOfDay < 25 ? '06:18' : timeOfDay < 75 ? '17:42' : '21:00';
 
@@ -267,7 +287,7 @@ export default function KigumiRoute() {
 
   return <main className="kigumi-shell" aria-label="Kigumi Pavilion assembly world">
     <div className="kigumi-scene" ref={sceneRef}>
-      {webglStatus === 'ready' ? <RendererErrorBoundary onFailure={onRendererFailure}><KigumiScene stage={stage} jointCount={jointCount} selectedJoint={selectedJoint} jointRunId={jointRunId} jointMode={jointMode} jointAnimating={jointAnimating} timeOfDay={timeOfDay} progress={progress} assemblySwipe={assemblySwipe} onReplay={beginJointReplay} onPhase={setJointPhase} onFinish={finishJoint} onRendererCanvas={onRendererCanvas} /></RendererErrorBoundary> : <PavilionFallback reason={webglStatus} />}
+      {webglStatus === 'ready' ? <RendererErrorBoundary key={rendererAttempt} onFailure={() => handleRendererFailure('renderer-error')}><KigumiScene stage={stage} jointCount={jointCount} selectedJoint={selectedJoint} jointRunId={jointRunId} jointMode={jointMode} jointAnimating={jointAnimating} timeOfDay={timeOfDay} progress={progress} assemblySwipe={assemblySwipe} onReplay={beginJointReplay} onPhase={setJointPhase} onFinish={finishJoint} onRendererCanvas={onRendererCanvas} /></RendererErrorBoundary> : <PavilionFallback reason={webglStatus} jointInterrupted={jointInterrupted} onRetry={retryRenderer} />}
     </div>
     <div className="kigumi-grain" aria-hidden="true" />
 
@@ -283,30 +303,36 @@ export default function KigumiRoute() {
       </div>
     </header>
 
+    <aside className="kigumi-build-status" aria-label="Timber assembly status">
+      <div><span>NAILS</span><b>00</b><small>NAIL-FREE STUDY</small></div>
+      <div><span>PIECES</span><b>{String(assembledPosts).padStart(2, '0')}</b><small>OF 06 POSTS</small></div>
+      <div><span>JOINTS</span><b>{String(jointCount).padStart(2, '0')}<i> / 06</i></b><small>TIMBER LOCKS</small></div>
+    </aside>
+
     <nav className="kigumi-stage-rail" aria-label="Pavilion assembly stages">
       <p className="kigumi-rail-title">ASSEMBLY SEQUENCE</p>
-      {ASSEMBLY_STAGES.map((item, index) => <button key={item.id} className={`kigumi-stage-button ${index === stage ? 'active' : ''} ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : ''}`} onClick={() => setStage(index)} disabled={jointAnimating || index > furthestStage} aria-current={index === stage ? 'step' : undefined} aria-label={`${item.title}, ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : index === stage ? 'current stage' : 'locked until earlier stages are assembled'}`}>
+      {ASSEMBLY_STAGES.map((item, index) => <button key={item.id} className={`kigumi-stage-button ${index === displayStage ? 'active' : ''} ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : ''}`} onClick={() => webglStatus === 'ready' ? setStage(index) : setFallbackBrowseStage(index)} disabled={webglStatus === 'ready' && (jointAnimating || index > furthestStage)} aria-current={index === displayStage ? 'step' : undefined} aria-label={`${item.title}, ${webglStatus !== 'ready' ? 'description preview' : index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : index === displayStage ? 'current stage' : 'locked until earlier stages are assembled'}`}>
         <span className="kigumi-stage-number">{String(index + 1).padStart(2, '0')}</span>
         <span><b>{item.title}</b><small>{item.subtitle}</small></span>
-        <i aria-hidden="true">{index < stage ? '✓' : '·'}</i>
+        <i aria-hidden="true">{index < furthestStage ? '✓' : '·'}</i>
       </button>)}
       <div className="kigumi-rail-note">Joinery details are presented as an illustrative study; forms vary by region and period.</div>
     </nav>
 
     <aside className="kigumi-info-card" aria-live="polite">
-      <span className="kigumi-kicker">{stage < 0 ? '—' : String(stage + 1).padStart(2, '0')} · {currentStage.kicker}</span>
+      <span className="kigumi-kicker">{displayStage < 0 ? '—' : String(displayStage + 1).padStart(2, '0')} · {currentStage.kicker}{webglStatus !== 'ready' ? ' · PREVIEW' : ''}</span>
       <h1>{currentStage.title}</h1>
       <p>{currentStage.description}</p>
-      <div className="kigumi-progress" role="progressbar" aria-label="Pavilion assembly progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress} aria-valuetext={`${progress}% assembled${stage === 3 ? `; ${jointCount} of 6 joints seated` : ''}`}><span style={{ width: `${progress}%` }} /></div>
-      <div className="kigumi-progress-label"><span>{stage === 3 ? `JOINTS ${jointCount} / 6` : 'ASSEMBLY'}</span><b>{progress}%</b></div>
+      <div className="kigumi-progress" role="progressbar" aria-label={webglStatus === 'ready' ? 'Pavilion assembly progress' : 'Selected stage in the assembly sequence'} aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress} aria-valuetext={`${progress}%${webglStatus === 'ready' ? ` assembled${displayStage === 3 ? `; ${jointCount} of 6 joints seated` : ''}` : ' through the assembly sequence'}`}><span style={{ width: `${progress}%` }} /></div>
+      <div className="kigumi-progress-label"><span>{displayStage === 3 ? `JOINTS ${jointCount} / 6` : 'ASSEMBLY'}</span><b>{progress}%</b></div>
     </aside>
 
     <div className="kigumi-controls" aria-label="Assembly navigation">
-      <button className="kigumi-previous-button" onClick={() => setStage(Math.max(-1, stage - 1))} disabled={stage < 0 || jointAnimating} aria-label="Previous assembly stage">←</button>
-      <div aria-live="polite" aria-atomic="true"><small>{stage < 0 ? 'READY TO BUILD' : `STAGE ${String(stage + 1).padStart(2, '0')} / 07`}</small><b>{stage < 0 ? 'Foundation stones' : currentStage.title}</b></div>
-      <button className={`kigumi-build-button ${holdProgress > 0 ? 'holding' : ''}`} onPointerDown={(event) => { try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* Global pointer listeners cover capture failures. */ } startHold(event); }} onPointerCancel={stopHold} onLostPointerCapture={stopHold} onKeyDown={(event) => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) startHold(event); }} onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') stopHold(); }} onBlur={stopHold} disabled={jointAnimating || stage === 6 || webglStatus !== 'ready'} aria-label={buildLabel} aria-describedby="build-help" aria-keyshortcuts="Space Enter">
+      <button className="kigumi-previous-button" onClick={() => webglStatus === 'ready' ? setStage(Math.max(-1, stage - 1)) : setFallbackBrowseStage(Math.max(0, displayStage - 1))} disabled={displayStage < 0 || (webglStatus === 'ready' && jointAnimating)} aria-label="Previous assembly stage">←</button>
+      <div aria-live="polite" aria-atomic="true"><small>{displayStage < 0 ? 'READY TO BUILD' : `STAGE ${String(displayStage + 1).padStart(2, '0')} / 07`}</small><b>{displayStage < 0 ? 'Foundation stones' : currentStage.title}</b></div>
+      <button className={`kigumi-build-button ${holdProgress > 0 ? 'holding' : ''}`} onPointerDown={(event) => { try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* Global pointer listeners cover capture failures. */ } startHold(event); }} onPointerCancel={stopHold} onLostPointerCapture={stopHold} onKeyDown={(event) => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) startHold(event); }} onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') stopHold(); }} onBlur={stopHold} disabled={jointAnimating || displayStage === 6 || webglStatus !== 'ready'} aria-label={buildLabel} aria-describedby="build-help" aria-keyshortcuts="Space Enter">
         <span className="kigumi-hold-progress" style={{ transform: `scaleX(${holdProgress})` }} />
-        <span>{stage === 6 ? '✓' : holdProgress > 0 ? 'HOLD' : 'BUILD'}</span>
+        <span lang="ja" aria-hidden="true">{displayStage === 6 ? '✓' : holdProgress > 0 ? '築' : '築'}</span>
       </button>
     </div>
 

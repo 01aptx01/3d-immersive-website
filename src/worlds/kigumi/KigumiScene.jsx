@@ -5,24 +5,30 @@ import { gsap } from 'gsap';
 import { JOINT_DETAILS } from './store.js';
 import * as THREE from 'three';
 
-const WOOD = '#805239';
-const WOOD_LIGHT = '#a8754e';
-const STONE = '#81796a';
-const TILE = '#373537';
+const WOOD = '#754631';
+const WOOD_LIGHT = '#9a6040';
+const STONE = '#655d53';
+const TILE = '#29282b';
+
+function forestAngle(index) {
+  const angle = index * 2.399963;
+  const cameraSector = Math.atan2(Math.sin(angle - 0.846), Math.cos(angle - 0.846));
+  return Math.abs(cameraSector) < 0.92 ? angle + Math.PI : angle;
+}
 
 function Site({ windStrength, nightFactor }) {
-  const bamboo = useMemo(() => Array.from({ length: 150 }, (_, i) => {
-    const a = i * 2.399963;
-    const r = 6.8 + (i % 5) * 0.52;
-    return { x: Math.cos(a) * r, z: Math.sin(a) * r, h: 4.2 + (i % 9) * 0.36, lean: Math.sin(i * 1.7) * 0.06 };
+  const bamboo = useMemo(() => Array.from({ length: 132 }, (_, i) => {
+    const a = forestAngle(i);
+    const r = 9.2 + (i % 6) * 0.76;
+    return { x: Math.cos(a) * r, z: Math.sin(a) * r, h: 5.2 + (i % 9) * 0.42, lean: Math.sin(i * 1.7) * 0.045 };
   }), []);
-  const leafInstances = useMemo(() => Array.from({ length: 190 }, (_, i) => {
-    const a = i * 2.399963;
-    const r = 6.5 + (i % 7) * 0.48;
+  const leafInstances = useMemo(() => Array.from({ length: 264 }, (_, i) => {
+    const a = forestAngle(i);
+    const r = 8.9 + (i % 9) * 0.7;
     const x = Math.cos(a) * r;
     const z = Math.sin(a) * r;
-    const h = 3.4 + (i % 8) * 0.45;
-    return { x, y: h, z, rotation: [Math.sin(i) * 0.35, a, Math.cos(i * 2) * 0.5], color: i % 5 === 0 ? '#9b8261' : '#78836b' };
+    const h = 4.1 + (i % 9) * 0.48;
+    return { x, y: h, z, rotation: [Math.sin(i) * 0.35, a, Math.cos(i * 2) * 0.5], color: i % 5 === 0 ? '#8d8065' : '#68715d' };
   }), []);
   const trunksRef = useRef();
   const leavesRef = useRef();
@@ -30,7 +36,7 @@ function Site({ windStrength, nightFactor }) {
   const leafQuaternion = useRef(new THREE.Quaternion());
   const leafPosition = useRef(new THREE.Vector3());
   const leafEuler = useRef(new THREE.Euler());
-  const leafScale = useRef(new THREE.Vector3(0.035, 0.38, 0.09));
+  const leafScale = useRef(new THREE.Vector3(0.025, 0.29, 0.055));
   const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
   useLayoutEffect(() => {
     if (trunksRef.current) {
@@ -51,7 +57,7 @@ function Site({ windStrength, nightFactor }) {
       const matrix = new THREE.Matrix4();
       const quaternion = new THREE.Quaternion();
       const position = new THREE.Vector3();
-      const scale = new THREE.Vector3(0.035, 0.38, 0.09);
+      const scale = new THREE.Vector3(0.025, 0.29, 0.055);
       leafInstances.forEach((leaf, i) => {
         position.set(leaf.x, leaf.y, leaf.z);
         quaternion.setFromEuler(new THREE.Euler(...leaf.rotation));
@@ -85,19 +91,19 @@ function Site({ windStrength, nightFactor }) {
   });
   return <group>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.23, 0]} receiveShadow>
-      <planeGeometry args={[200, 200]} /><meshStandardMaterial color="#8e8677" roughness={1} />
+      <planeGeometry args={[200, 200]} /><meshStandardMaterial color="#898274" roughness={1} />
     </mesh>
     <mesh position={[0, -0.12, 0]} receiveShadow>
-      <cylinderGeometry args={[7.7, 7.9, 0.18, 96]} /><meshStandardMaterial color="#b0a695" roughness={1} />
+      <cylinderGeometry args={[7.7, 7.9, 0.18, 96]} /><meshStandardMaterial color="#a49b8d" roughness={1} />
     </mesh>
     <mesh position={[0, -0.015, 0]} receiveShadow>
-      <cylinderGeometry args={[6.95, 7.05, 0.04, 96]} /><meshStandardMaterial color="#6a6258" roughness={1} />
+      <cylinderGeometry args={[6.95, 7.05, 0.04, 96]} /><meshStandardMaterial color="#756d62" roughness={1} />
     </mesh>
-    {Array.from({ length: 12 }, (_, i) => <mesh key={`path-${i}`} position={[(i - 5.5) * 0.7, -0.08, 4.4]} rotation={[-Math.PI / 2, 0, Math.sin(i) * 0.04]} receiveShadow>
-      <boxGeometry args={[0.63, 4.8 + (i % 3) * 0.25, 0.05]} /><meshStandardMaterial color={i % 2 ? '#b6ad9e' : '#a79e8e'} roughness={1} />
+    {Array.from({ length: 19 }, (_, i) => <mesh key={`rake-${i}`} position={[(i - 9) * 0.32, -0.08, 3.8]} rotation={[-Math.PI / 2, 0, Math.sin(i) * 0.025]} receiveShadow>
+      <boxGeometry args={[0.035, 6.8, 0.018]} /><meshStandardMaterial color={i % 2 ? '#948b7c' : '#a09788'} roughness={1} />
     </mesh>)}
     <instancedMesh ref={trunksRef} args={[null, null, bamboo.length]} castShadow receiveShadow>
-      <cylinderGeometry args={[0.045, 0.07, 1, 7]} /><meshStandardMaterial color="#72734d" roughness={0.85} />
+      <cylinderGeometry args={[0.025, 0.045, 1, 7]} /><meshStandardMaterial color="#656b4d" roughness={0.85} />
     </instancedMesh>
     <instancedMesh ref={leavesRef} args={[null, null, leafInstances.length]}>
       <sphereGeometry args={[1, 5, 4]} /><meshStandardMaterial color="#78836b" roughness={0.95} />
@@ -162,9 +168,14 @@ function MapleTree() {
     <mesh position={[0, 1.6, 0]} rotation={[0, 0, -0.12]} castShadow>
       <cylinderGeometry args={[0.16, 0.29, 3.3, 9]} /><meshStandardMaterial color="#594536" roughness={1} />
     </mesh>
-    {[[0.3, 2.7, 0], [-0.7, 2.65, 0.2], [0.5, 3.0, -0.25], [-0.25, 3.4, -0.1]].map(([x, y, z], i) => <mesh key={i} position={[x, y, z]} castShadow>
-      <icosahedronGeometry args={[0.68 + (i % 2) * 0.17, 1]} /><meshStandardMaterial color={i % 2 ? '#824333' : '#a14e37'} roughness={0.95} />
-    </mesh>)}
+    {Array.from({ length: 28 }, (_, i) => {
+      const x = Math.sin(i * 12.9898) * 1.15;
+      const y = 2.45 + ((i * 7) % 19) * 0.078;
+      const z = Math.cos(i * 78.233) * 0.66;
+      return <mesh key={i} position={[x, y, z]} castShadow>
+        <icosahedronGeometry args={[0.2 + (i % 3) * 0.035, 1]} /><meshStandardMaterial color={i % 4 === 0 ? '#8a3e31' : i % 2 ? '#a14e37' : '#934332'} roughness={0.95} />
+      </mesh>;
+    })}
   </group>;
 }
 
@@ -183,7 +194,7 @@ function Lantern({ position, nightFactor }) {
 function Foundation() {
   const posts = [-2, 0, 2].flatMap((x) => [[x, -1.65], [x, 1.65]]);
   return <group>
-    <mesh position={[0, 0.03, 0]} castShadow receiveShadow><boxGeometry args={[5.7, 0.22, 4.55]} /><meshStandardMaterial color="#5b554c" roughness={0.95} /></mesh>
+    <mesh position={[0, 0.03, 0]} castShadow receiveShadow><boxGeometry args={[5.45, 0.24, 5.45]} /><meshStandardMaterial color="#393638" roughness={0.95} /></mesh>
     {posts.map(([x, z], i) => <group key={i} position={[x, 0.2, z]}>
       <mesh castShadow receiveShadow><boxGeometry args={[0.88, 0.32, 0.88]} /><meshStandardMaterial color={i % 2 ? '#8a8275' : STONE} roughness={0.97} /></mesh>
       <mesh position={[0, 0.18, 0]}><boxGeometry args={[0.72, 0.055, 0.72]} /><meshStandardMaterial color="#b2a999" roughness={0.95} /></mesh>
@@ -214,7 +225,6 @@ function Frame() {
     {[-1.65, 1.65].flatMap((z, row) => longBeamSegments.map(([x, length], i) => <Beam key={`${row}-${i}`} position={[x, 3.34, z]} size={[length, 0.34, 0.38]} color={row ? '#8b5d3e' : WOOD} />))}
     <Beam position={[-2, 3.34, 0]} size={[0.38, 0.34, 3.45]} color={WOOD_LIGHT} />
     <Beam position={[2, 3.34, 0]} size={[0.38, 0.34, 3.45]} color={WOOD_LIGHT} />
-    <Beam position={[0, 3.57, 0]} size={[4.5, 0.15, 0.18]} color="#9b704c" />
   </group>;
 }
 
@@ -325,23 +335,23 @@ function Rafters() {
   const rafters = Array.from({ length: rafterCount }, (_, i) => {
     const x = -2.55 + i * (5.1 / (rafterCount - 1));
     return <React.Fragment key={i}>
-      <mesh position={[x, 3.39, 0.95]} rotation={[-0.36, 0, 0]} castShadow><boxGeometry args={[0.16, 0.18, 2.25]} /><meshStandardMaterial color={i % 2 ? '#956847' : '#a47651'} roughness={0.8} /></mesh>
-      <mesh position={[x, 3.39, -0.95]} rotation={[0.36, 0, 0]} castShadow><boxGeometry args={[0.16, 0.18, 2.25]} /><meshStandardMaterial color={i % 2 ? '#956847' : '#a47651'} roughness={0.8} /></mesh>
+      <mesh position={[x, 3.51, 1.25]} rotation={[0.52, 0, 0]} castShadow><boxGeometry args={[0.16, 0.18, 2.95]} /><meshStandardMaterial color={i % 2 ? '#956847' : '#a47651'} roughness={0.8} /></mesh>
+      <mesh position={[x, 3.51, -1.25]} rotation={[-0.52, 0, 0]} castShadow><boxGeometry args={[0.16, 0.18, 2.95]} /><meshStandardMaterial color={i % 2 ? '#956847' : '#a47651'} roughness={0.8} /></mesh>
     </React.Fragment>;
   });
   return <group>
     {rafters}
-    <Beam position={[0, 3.52, 0]} size={[0.22, 0.24, 4.25]} color="#885d40" />
+    <Beam position={[0, 4.29, 0]} size={[2.7, 0.18, 0.18]} color="#885d40" />
   </group>;
 }
 
 function RoofShell() {
   const geometry = useMemo(() => {
     const vertices = [
-      -1.3, 3.94, 0, 1.3, 3.94, 0, 3.05, 2.99, 2.5, -3.05, 2.99, 2.5,
-      -1.3, 3.94, 0, 1.3, 3.94, 0, 3.05, 2.99, -2.5, -3.05, 2.99, -2.5,
-      -1.3, 3.94, 0, -3.05, 2.99, 2.5, -3.05, 2.99, -2.5,
-      1.3, 3.94, 0, 3.05, 2.99, 2.5, 3.05, 2.99, -2.5,
+      -1.3, 4.42, 0, 1.3, 4.42, 0, 3.05, 2.99, 2.5, -3.05, 2.99, 2.5,
+      -1.3, 4.42, 0, 1.3, 4.42, 0, 3.05, 2.99, -2.5, -3.05, 2.99, -2.5,
+      -1.3, 4.42, 0, -3.05, 2.99, 2.5, -3.05, 2.99, -2.5,
+      1.3, 4.42, 0, 3.05, 2.99, 2.5, 3.05, 2.99, -2.5,
     ];
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
@@ -354,7 +364,7 @@ function RoofShell() {
     for (let row = 0; row < 7; row += 1) {
       const t = (row + 0.55) / 7;
       const z = 2.5 * t;
-      const y = 3.94 - 0.95 * t;
+      const y = 4.42 - 1.43 * t;
       const halfWidth = 1.3 + (3.05 - 1.3) * t;
       const count = Math.max(4, Math.floor((halfWidth * 2) / 0.44));
       for (let i = 0; i < count; i += 1) {
@@ -381,7 +391,7 @@ function RoofShell() {
     tiles.forEach(([x, y, z, end], i) => {
       dummy.position.set(x, y, z);
       if (end) dummy.rotation.set(0, 0, end * 0.5);
-      else dummy.rotation.set(z > 0 ? -0.36 : 0.36, 0, 0);
+      else dummy.rotation.set(z > 0 ? 0.52 : -0.52, 0, 0);
       dummy.scale.set(1, 1, 1);
       dummy.updateMatrix();
       tileMesh.current.setMatrixAt(i, dummy.matrix);
@@ -391,11 +401,11 @@ function RoofShell() {
     if (tileMesh.current.instanceColor) tileMesh.current.instanceColor.needsUpdate = true;
   }, [tiles]);
   return <group>
-    <mesh geometry={geometry} castShadow receiveShadow><meshStandardMaterial color="#493d35" side={THREE.DoubleSide} roughness={0.92} /></mesh>
+    <mesh geometry={geometry} castShadow receiveShadow><meshStandardMaterial color="#302d2e" side={THREE.DoubleSide} roughness={0.92} /></mesh>
     <instancedMesh ref={tileMesh} args={[null, null, tiles.length]} castShadow receiveShadow>
       <boxGeometry args={[0.42, 0.09, 0.34]} /><meshStandardMaterial color="#ffffff" roughness={0.86} />
     </instancedMesh>
-    <mesh position={[0, 3.95, 0]}><sphereGeometry args={[0.14, 12, 8]} /><meshStandardMaterial color="#4b3930" roughness={0.7} /></mesh>
+    <mesh position={[0, 4.43, 0]}><sphereGeometry args={[0.14, 12, 8]} /><meshStandardMaterial color="#393133" roughness={0.7} /></mesh>
   </group>;
 }
 
@@ -421,8 +431,8 @@ function Pavilion({ stage, jointCount, jointRefs, onReplay }) {
     <AssemblyStage complete={stage >= 0} offset={-0.55}><Foundation /></AssemblyStage>
     <AssemblyStage complete={stage >= 1} offset={2}><Pillars /></AssemblyStage>
     <AssemblyStage complete={stage >= 2} offset={2}><Frame /></AssemblyStage>
-    <AssemblyStage complete={stage >= 3} offset={1.2}><Joinery jointCount={jointCount} jointRefs={jointRefs} onReplay={onReplay} showMarkers={stage >= 3} /></AssemblyStage>
-    <AssemblyStage complete={stage >= 4} offset={2}><Rafters /></AssemblyStage>
+    <AssemblyStage complete={stage === 3} offset={1.2}><Joinery jointCount={jointCount} jointRefs={jointRefs} onReplay={onReplay} showMarkers={stage === 3} /></AssemblyStage>
+    <AssemblyStage complete={stage === 4} offset={2}><Rafters /></AssemblyStage>
     <AssemblyStage complete={stage >= 5} offset={2.3}><RoofShell /></AssemblyStage>
     <AssemblyStage complete={stage >= 6} offset={2}><Shoji /></AssemblyStage>
   </group>;
@@ -430,7 +440,7 @@ function Pavilion({ stage, jointCount, jointRefs, onReplay }) {
 
 function SceneContents({ stage, jointCount, selectedJoint, jointRunId, jointMode, jointAnimating, jointRefs, controlsRef, timeOfDay, progress, assemblySwipe, onReplay, onPhase, onFinish }) {
   const nightFactor = Math.max(0, Math.min(1, (timeOfDay - 55) / 45));
-  const skyColor = new THREE.Color('#c9c2b2').lerp(new THREE.Color('#d29b77'), Math.min(1, timeOfDay / 50));
+  const skyColor = new THREE.Color('#d2ccbf').lerp(new THREE.Color('#d29b77'), Math.min(1, timeOfDay / 50));
   if (timeOfDay > 50) skyColor.lerp(new THREE.Color('#1d2737'), (timeOfDay - 50) / 50);
   const sunColor = new THREE.Color('#ffd6a2').lerp(new THREE.Color('#f0a06b'), Math.min(1, timeOfDay / 50));
   if (timeOfDay > 50) sunColor.lerp(new THREE.Color('#9caecb'), (timeOfDay - 50) / 50);
@@ -438,10 +448,10 @@ function SceneContents({ stage, jointCount, selectedJoint, jointRunId, jointMode
   const lightPosition = [-7 + timeOfDay * 0.15, 11 - timeOfDay * 0.035, 5 - timeOfDay * 0.12];
   return <>
     <color attach="background" args={[skyColor]} />
-    <fog attach="fog" args={[skyColor, 11, 33]} />
-    <ambientLight intensity={0.8 - nightFactor * 0.5} color={sunColor} />
-    <hemisphereLight intensity={1.25 - nightFactor * 0.5} color={sunColor} groundColor={nightFactor > 0.5 ? '#272b32' : '#55534a'} />
-    <directionalLight castShadow position={lightPosition} intensity={3.0 - nightFactor * 2.35} color={sunColor} shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12} shadow-bias={-0.0002} />
+    <fog attach="fog" args={[skyColor, 8, 28]} />
+    <ambientLight intensity={0.62 - nightFactor * 0.38} color={sunColor} />
+    <hemisphereLight intensity={0.92 - nightFactor * 0.38} color={sunColor} groundColor={nightFactor > 0.5 ? '#272b32' : '#55534a'} />
+    <directionalLight castShadow position={lightPosition} intensity={2.2 - nightFactor * 1.65} color={sunColor} shadow-mapSize-width={1024} shadow-mapSize-height={1024} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12} shadow-bias={-0.0002} />
     <Site windStrength={windStrength} nightFactor={nightFactor} />
     <Pavilion stage={stage} jointCount={jointCount} jointRefs={jointRefs} onReplay={onReplay} />
     <ContactShadows key={`${stage}-${jointCount}-${jointRunId}`} position={[0, -0.09, 0]} opacity={0.35} scale={17} resolution={128} blur={1.8} far={5} frames={48} smooth={false} />
