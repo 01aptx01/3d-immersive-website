@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+.world-shell, .kigumi-shell { --world-ink: #302c37; --world-paper: rgba(250,248,244,.94); --world-accent: #715a9e; font-family: 'DM Sans', sans-serif; }
+.world-header { color: var(--world-ink); background: linear-gradient(180deg, rgba(250,248,244,.97), rgba(250,248,244,.79)); border-bottom: 1px solid rgba(61,49,74,.15); backdrop-filter: blur(10px); }
+.world-header a { color: var(--world-ink); text-decoration: none; }
+.world-header button, .world-header .kigumi-worlds-link { color: var(--world-ink); border: 1px solid rgba(61,49,74,.22); border-radius: 8px; background: var(--world-paper); min-height: 38px; }
+.world-header button:focus-visible, .world-header a:focus-visible { outline: 2px solid var(--world-accent); outline-offset: 3px; }
+:is(.world-shell, .kigumi-shell) .world-header { color: var(--world-ink); background: linear-gradient(180deg, rgba(250,248,244,.97), rgba(250,248,244,.8)); border-bottom: 1px solid rgba(61,49,74,.15); }
+:is(.world-shell, .kigumi-shell) .world-header a { color: var(--world-ink); text-decoration: none; }
+@media (max-width: 760px) {
+  .world-header .brand-lockup p, .world-header .kigumi-brand div, .world-header .sound-toggle { display: none; }
+  .world-header .brand, .world-header .kigumi-brand > a { font-size: 16px; letter-spacing: -.04em; }
+  .world-header .top-actions { flex-wrap: nowrap; }
+  .world-header .worlds-toggle { display: inline-flex; align-items: center; }
+  .world-header .worlds-toggle span, .world-header .board-badge { display: none; }
+  .world-header .customize-toggle { font-size: 12px; }
+}
+.world-header .customize-toggle.active, .world-header .sound-toggle button.selected { color: #fff; background: #554467; }

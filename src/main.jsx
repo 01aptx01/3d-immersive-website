@@ -8,7 +8,7 @@ function WorldRouter() {
   const params = new URLSearchParams(window.location.search);
   const routeWorld = window.location.pathname === '/world/kigumi' ? 'kigumi' : params.get('world');
   useEffect(() => {
-    document.title = routeWorld === 'kigumi' ? 'Kigumi Pavilion · elsewhere' : 'Elsewhere — Mechanical Garden';
+    document.title = routeWorld === 'kigumi' ? 'Kigumi Pavilion · Immersive-Craft' : 'Mechanical Garden · Immersive-Craft';
   }, [routeWorld]);
   return <Suspense fallback={<main className="world-loading" role="status">Entering the world…</main>}>
     {routeWorld === 'kigumi' ? <KigumiRoute /> : <KeyboardApp />}

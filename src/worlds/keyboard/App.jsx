@@ -1,3 +1,4 @@
+import WorldHeader from '../../shared/WorldHeader.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import KeyboardScene from './KeyboardScene.jsx';
@@ -122,9 +123,9 @@ export default function App() {
 
   return <main className="world-shell" ref={shell}>
     <div className="grain" aria-hidden="true" />
-    <header className="topbar">
+    <WorldHeader className="topbar">
       <div className="brand-lockup">
-        <a className="brand" href="/" aria-label="Elsewhere home">elsewhere<span className="brand-dot">.</span></a>
+        <a className="brand" href="/" aria-label="Immersive-Craft home">Immersive-Craft<span className="brand-dot">.</span></a>
         <span className="board-badge">65%</span>
         <p>Mechanical Garden <span>·</span> Pull it apart, one layer at a time</p>
       </div>
@@ -134,7 +135,7 @@ export default function App() {
         <button className="worlds-toggle" onClick={() => setShowWorlds(true)}>Worlds <span>{String(worlds.length).padStart(2, '0')}</span></button>
         <button className={`customize-toggle ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings((v) => !v)}><span>☷</span> Customize</button>
       </div>
-    </header>
+    </WorldHeader>
 
     <section className="scene-stage" aria-label="Interactive Mechanical Garden 3D world">
       <div className="scene-aura" />
@@ -183,7 +184,7 @@ export default function App() {
         <a className="archive-link" href="/wireframes/explore.html">Open the full wireframe directory <span>↗</span></a>
       </section>
     </div>}
-    <footer className="micro-footer"><span>© ELSEWHERE 2026</span><span>MADE TO BE EXPLORED</span><button onClick={() => setShowSettings(true)}>PREFERENCES</button></footer>
+    <footer className="micro-footer"><span>© IMMERSIVE-CRAFT 2026</span><span>MADE TO BE EXPLORED</span><button onClick={() => setShowSettings(true)}>PREFERENCES</button></footer>
   </main>;
 }
 
