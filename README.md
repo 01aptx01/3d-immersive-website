@@ -1,6 +1,6 @@
 <div align="center">
 
-# FORM & FRAME
+# Immersive-Craft
 
 <p>Interactive 3D Studies</p>
 
@@ -14,9 +14,9 @@
 
 </div>
 
-FORM & FRAME is a browser-based collection of interactive object and architecture studies. Its two implemented worlds turn mechanical and structural details into things you can inspect, move, customize, and assemble: a compact mechanical keyboard and a Japanese-inspired timber pavilion.
+Immersive-Craft is a browser-based collection of interactive object and architecture studies. Its two implemented worlds turn mechanical and structural details into things you can inspect, move, customize, and assemble: a compact mechanical keyboard and a Japanese-inspired timber pavilion.
 
-The name pairs **form**, the shape and material of an object, with **frame**, the structure that holds it together. The application currently displays its original **Elsewhere** branding; FORM & FRAME is the new project name used in this documentation. The repository name and existing URLs remain valid.
+The current application and wireframe archive retain their original **Elsewhere** branding. This README uses the new project name, **Immersive-Craft**; the repository slug and published URLs remain unchanged.
 
 > **Status:** experimental prototype. Two interactive worlds are implemented; two catalog entries are planned. Home, Explore, and related archive pages are separate HTML wireframes. This is a frontend application with no backend, accounts, or cloud-saved progress.
 
@@ -304,7 +304,7 @@ The pavilion's procedural geometry and bundled wind do not depend on downloaded 
 | Experiences | Keyboard and pavilion implemented | Refine interaction and performance on real devices. |
 | New worlds | Aurora Drift and Mosslight Grove are placeholders | Implement independent scene modules. |
 | Discovery | World selector plus separate archive pages | Build production navigation with one shared catalog. |
-| Branding | FORM & FRAME in documentation; Elsewhere in the app | Apply the new identity to UI copy and metadata separately. |
+| Branding | Immersive-Craft is the project name; existing application screens retain Elsewhere branding | Rebrand application UI and metadata in a separate product change. |
 | Reliability | Pavilion fallback; keyboard requires working graphics | Extend graceful failure handling and browser coverage. |
 | Delivery | Build available; archive copy is manual | Automate archive packaging and investigate bundle size. |
 | Quality | No test or lint scripts are defined | Add focused interaction checks as the project matures. |
