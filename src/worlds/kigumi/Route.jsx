@@ -1,3 +1,4 @@
+import WorldHeader from '../../shared/WorldHeader.jsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Howl } from 'howler';
 import { useKigumiStore, ASSEMBLY_STAGES, JOINT_DETAILS } from './store.js';
@@ -86,6 +87,7 @@ export default function KigumiRoute() {
   const [fallbackBrowseStage, setFallbackBrowseStage] = useState(() => stage);
   const [jointInterrupted, setJointInterrupted] = useState(false);
   const handleRendererFailure = useCallback((reason) => {
+    setAutoBuild(false);
     const current = useKigumiStore.getState();
     setFallbackBrowseStage(current.stage);
     setJointInterrupted(current.jointAnimating);
@@ -102,13 +104,11 @@ export default function KigumiRoute() {
     setWebglStatus('ready');
   }, []);
   const sceneRef = useRef(null);
-  const holdFrame = useRef(0);
-  const holdStarted = useRef(0);
-  const holdActive = useRef(false);
-  const holdPointerId = useRef(null);
   const gestureStart = useRef(null);
   const lastGesture = useRef(0);
-  const [holdProgress, setHoldProgress] = useState(0);
+  const [autoBuild, setAutoBuild] = useState(false);
+  const autoBuildRef = useRef(false);
+  autoBuildRef.current = autoBuild;
   const [timeOfDay, setTimeOfDay] = useState(0);
   const [assemblySwipe, setAssemblySwipe] = useState(false);
   const [rendererCanvas, setRendererCanvas] = useState(null);
@@ -122,48 +122,17 @@ export default function KigumiRoute() {
   const progress = Math.round(((displayStage === 3 ? 3 + jointCount / 6 : Math.max(0, displayStage + 1)) / ASSEMBLY_STAGES.length) * 100);
   const assembledPosts = stage >= 1 ? 6 : 0;
 
-  const stopHold = useCallback(() => {
-    if (holdFrame.current) cancelAnimationFrame(holdFrame.current);
-    holdFrame.current = 0;
-    holdActive.current = false;
-    holdPointerId.current = null;
-    setHoldProgress(0);
-  }, []);
-  const startHold = useCallback((event) => {
-    if (event?.button !== undefined && event.button !== 0) return;
-    if (holdActive.current) return;
-    event?.preventDefault?.();
-    stopHold();
-    holdActive.current = true;
-    holdPointerId.current = Number.isInteger(event?.pointerId) ? event.pointerId : null;
-    holdStarted.current = performance.now();
-    const tick = (now) => {
-      const value = Math.min(1, (now - holdStarted.current) / 850);
-      setHoldProgress(value);
-      if (value >= 1) {
-        holdFrame.current = 0;
-        holdActive.current = false;
-        setHoldProgress(0);
-        useKigumiStore.getState().advanceAssembly();
-      } else holdFrame.current = requestAnimationFrame(tick);
-    };
-    holdFrame.current = requestAnimationFrame(tick);
-  }, [stopHold]);
-
+  // Wait for each stage transition or connection cinematic before advancing.
   useEffect(() => {
-    const endPointerHold = (event) => {
-      if (holdActive.current && holdPointerId.current !== null && event.pointerId === holdPointerId.current) stopHold();
-    };
-    window.addEventListener('pointerup', endPointerHold);
-    window.addEventListener('pointercancel', endPointerHold);
-    return () => {
-      window.removeEventListener('pointerup', endPointerHold);
-      window.removeEventListener('pointercancel', endPointerHold);
-      if (holdFrame.current) cancelAnimationFrame(holdFrame.current);
-      holdActive.current = false;
-      holdPointerId.current = null;
-    };
-  }, [stopHold]);
+    if (!autoBuild) return undefined;
+    if (webglStatus !== 'ready' || stage >= ASSEMBLY_STAGES.length - 1) {
+      setAutoBuild(false);
+      return undefined;
+    }
+    if (jointAnimating) return undefined;
+    const timer = window.setTimeout(() => useKigumiStore.getState().advanceAssembly(), 1100);
+    return () => window.clearTimeout(timer);
+  }, [autoBuild, stage, jointCount, jointAnimating, webglStatus]);
 
   useEffect(() => {
     if (!rendererCanvas) return undefined;
@@ -179,7 +148,7 @@ export default function KigumiRoute() {
     const node = sceneRef.current;
     if (!node) return undefined;
     const onWheel = (event) => {
-      if (Math.abs(event.deltaY) < 9) return;
+      if (autoBuildRef.current || Math.abs(event.deltaY) < 9) return;
       const now = performance.now();
       if (now - lastGesture.current < 480) return;
       lastGesture.current = now;
@@ -192,6 +161,7 @@ export default function KigumiRoute() {
       }
     };
     const onTouchStart = (event) => {
+      if (autoBuildRef.current) return;
       if (event.touches?.length !== 1) {
         gestureStart.current = null;
         setAssemblySwipe(false);
@@ -249,7 +219,7 @@ export default function KigumiRoute() {
     };
   }, []);
 
-  const buildLabel = displayStage < 0 ? 'Hold to place the foundation' : displayStage === 3 && jointCount < 6 ? `Hold to fit joint ${jointCount + 1} of 6` : displayStage === 6 ? 'Pavilion complete' : 'Hold to continue assembly';
+  const buildLabel = autoBuild ? 'Pause automatic assembly' : displayStage === 6 ? 'Pavilion complete' : 'Start automatic assembly';
   const timeLabel = timeOfDay < 25 ? 'Dawn' : timeOfDay < 75 ? 'Sunset' : 'Night';
   const clockLabel = timeOfDay < 25 ? '06:18' : timeOfDay < 75 ? '17:42' : '21:00';
 
@@ -291,9 +261,9 @@ export default function KigumiRoute() {
     </div>
     <div className="kigumi-grain" aria-hidden="true" />
 
-    <header className="kigumi-topbar">
+    <WorldHeader className="kigumi-topbar">
       <div className="kigumi-brand">
-        <a href="/" aria-label="Return to Mechanical Garden">elsewhere<span>.</span></a>
+        <a href="/" aria-label="Immersive-Craft home">Immersive-Craft<span>.</span></a>
         <div><b>02 / 04</b><small>KIGUMI PAVILION</small></div>
       </div>
       <div className="kigumi-top-copy"><p>木組 · TIMBER ASSEMBLY</p><span>A pavilion assembled one connection at a time</span></div>
@@ -301,7 +271,7 @@ export default function KigumiRoute() {
         <button className={`kigumi-sound-toggle ${soundEnabled ? 'sound-on' : ''}`} onClick={() => setSoundEnabled(!soundEnabled)} aria-pressed={soundEnabled} aria-label={soundEnabled ? 'Mute garden wind' : 'Enable garden wind'} title={soundEnabled ? 'Mute garden wind' : 'Enable garden wind'}>{soundEnabled ? '♫' : '♩'}<span>{soundEnabled ? 'WIND ON' : 'SOUND OFF'}</span></button>
         <a className="kigumi-worlds-link" href="/?world=mechanical-garden">WORLD 01 <span>↗</span></a>
       </div>
-    </header>
+    </WorldHeader>
 
     <aside className="kigumi-build-status" aria-label="Timber assembly status">
       <div><span>NAILS</span><b>00</b><small>NAIL-FREE STUDY</small></div>
@@ -311,7 +281,7 @@ export default function KigumiRoute() {
 
     <nav className="kigumi-stage-rail" aria-label="Pavilion assembly stages">
       <p className="kigumi-rail-title">ASSEMBLY SEQUENCE</p>
-      {ASSEMBLY_STAGES.map((item, index) => <button key={item.id} className={`kigumi-stage-button ${index === displayStage ? 'active' : ''} ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : ''}`} onClick={() => webglStatus === 'ready' ? setStage(index) : setFallbackBrowseStage(index)} disabled={webglStatus === 'ready' && (jointAnimating || index > furthestStage)} aria-current={index === displayStage ? 'step' : undefined} aria-label={`${item.title}, ${webglStatus !== 'ready' ? 'description preview' : index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : index === displayStage ? 'current stage' : 'locked until earlier stages are assembled'}`}>
+      {ASSEMBLY_STAGES.map((item, index) => <button key={item.id} className={`kigumi-stage-button ${index === displayStage ? 'active' : ''} ${index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : ''}`} onClick={() => webglStatus === 'ready' ? setStage(index) : setFallbackBrowseStage(index)} disabled={webglStatus === 'ready' && (autoBuild || jointAnimating || index > furthestStage)} aria-current={index === displayStage ? 'step' : undefined} aria-label={`${item.title}, ${webglStatus !== 'ready' ? 'description preview' : index < furthestStage || (index === 3 && jointCount === 6) ? 'complete' : index === displayStage ? 'current stage' : 'locked until earlier stages are assembled'}`}>
         <span className="kigumi-stage-number">{String(index + 1).padStart(2, '0')}</span>
         <span><b>{item.title}</b><small>{item.subtitle}</small></span>
         <i aria-hidden="true">{index < furthestStage ? '✓' : '·'}</i>
@@ -328,11 +298,10 @@ export default function KigumiRoute() {
     </aside>
 
     <div className="kigumi-controls" aria-label="Assembly navigation">
-      <button className="kigumi-previous-button" onClick={() => webglStatus === 'ready' ? setStage(Math.max(-1, stage - 1)) : setFallbackBrowseStage(Math.max(0, displayStage - 1))} disabled={displayStage < 0 || (webglStatus === 'ready' && jointAnimating)} aria-label="Previous assembly stage">←</button>
+      <button className="kigumi-previous-button" onClick={() => webglStatus === 'ready' ? setStage(Math.max(-1, stage - 1)) : setFallbackBrowseStage(Math.max(0, displayStage - 1))} disabled={displayStage < 0 || (webglStatus === 'ready' && (jointAnimating || autoBuild))} aria-label="Previous assembly stage">←</button>
       <div aria-live="polite" aria-atomic="true"><small>{displayStage < 0 ? 'READY TO BUILD' : `STAGE ${String(displayStage + 1).padStart(2, '0')} / 07`}</small><b>{displayStage < 0 ? 'Foundation stones' : currentStage.title}</b></div>
-      <button className={`kigumi-build-button ${holdProgress > 0 ? 'holding' : ''}`} onPointerDown={(event) => { try { event.currentTarget.setPointerCapture?.(event.pointerId); } catch { /* Global pointer listeners cover capture failures. */ } startHold(event); }} onPointerCancel={stopHold} onLostPointerCapture={stopHold} onKeyDown={(event) => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) startHold(event); }} onKeyUp={(event) => { if (event.key === ' ' || event.key === 'Enter') stopHold(); }} onBlur={stopHold} disabled={jointAnimating || displayStage === 6 || webglStatus !== 'ready'} aria-label={buildLabel} aria-describedby="build-help" aria-keyshortcuts="Space Enter">
-        <span className="kigumi-hold-progress" style={{ transform: `scaleX(${holdProgress})` }} />
-        <span lang="ja" aria-hidden="true">{displayStage === 6 ? '✓' : holdProgress > 0 ? '築' : '築'}</span>
+      <button className="kigumi-build-button" onClick={() => setAutoBuild((running) => !running)} disabled={displayStage === 6 || webglStatus !== 'ready'} aria-label={buildLabel} aria-pressed={autoBuild} aria-describedby="build-help">
+        <span aria-hidden="true">{displayStage === 6 ? '✓' : autoBuild ? 'Ⅱ' : '築'}</span>
       </button>
     </div>
 
@@ -341,7 +310,7 @@ export default function KigumiRoute() {
       <input aria-label="Change time from dawn through sunset to night" aria-valuetext={`${timeLabel}, ${clockLabel}`} type="range" min="0" max="100" step="1" value={timeOfDay} disabled={webglStatus !== 'ready'} style={{ '--time-progress': `${timeOfDay}%` }} onChange={(event) => setTimeOfDay(Number(event.target.value))} />
       <div className="kigumi-time-stops"><span>Dawn</span><span>Sunset</span><span>Night</span></div>
     </section>
-    <p id="build-help" className="kigumi-build-help">Hold to assemble · scroll over the scene to step</p>
+    <p id="build-help" className="kigumi-build-help">{stage === 6 && webglStatus === 'ready' ? 'Assembly complete · revisit a stage to explore' : autoBuild ? 'Assembling automatically · press to pause' : 'Press to assemble · scroll to step manually'}</p>
 
     {jointInfoOpen && selectedJoint >= 0 && <aside className="kigumi-joint-card" aria-live="polite">
       <button className="kigumi-joint-close" onClick={closeJointInfo} aria-label="Close joinery information">×</button>

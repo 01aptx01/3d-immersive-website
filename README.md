@@ -21,7 +21,7 @@ Immersive-Craft is a browser-based collection of interactive studies about objec
 
 > **Project status:** Experimental frontend prototype. Two interactive 3D worlds are implemented. Two more are catalog concepts only. There is no backend, account system, or cloud-saved progress.
 
-The application UI and separate design archive still use the earlier **Elsewhere** branding. The project name and repository URL remain **Immersive-Craft** and `3d-immersive-website`.
+The interactive worlds share Immersive-Craft navigation and typography. The separate design archive preserves the earlier **Elsewhere** branding. Some screenshots document earlier interface revisions; see the [image manifest](docs/images/README.md) for capture details.
 
 ## Table of Contents
 
@@ -74,7 +74,7 @@ A Japanese-inspired timber pavilion assembled from its foundation through the ro
 | 06 | Roof tiles | Overlapping roof cover |
 | 07 | Shoji screens | Timber-and-paper-inspired enclosure |
 
-Hold the circular **築 / Build** button for approximately 0.85 seconds to advance, or hold **Space** or **Enter** while the button is focused. Scroll over the scene or swipe vertically to move through stages. Complete the six connection studies before continuing to the roof. To replay a completed joint after adding the roof, return to **Interlocking joints** on the stage rail.
+Press the circular **築 / Build** button once to assemble automatically through all seven stages and six connections. Press it again to pause; an in-progress joint finishes before the pause takes effect. Scroll over the scene or swipe vertically to move through stages. Complete the six connection studies before continuing to the roof. To replay a completed joint after adding the roof, return to **Interlocking joints** on the stage rail.
 
 ![The timber frame and six completed joint markers with a connection study card](docs/images/pavilion-joinery.jpg)
 
@@ -132,7 +132,7 @@ Open the default route to explore Mechanical Garden. Visit `/?world=kigumi` for 
 
 **Mechanical Garden:** drag **Explode** to reveal the assembly, choose a layer to inspect it, and use the customization drawer to change materials. Hover over keys to reveal switch anatomy. Keyboard input can press matching keys.
 
-**Kigumi Pavilion:** hold **築 / Build** to progress through the seven assembly stages. Use the stage rail to revisit unlocked stages, return to **Interlocking joints** and select a completed marker to replay a connection, and adjust **Time of day** to change the scene lighting. Wind audio is optional and starts muted.
+**Kigumi Pavilion:** press **築 / Build** once to assemble through the seven stages; press it again to pause. Use the stage rail to revisit unlocked stages, return to **Interlocking joints** and select a completed marker to replay a connection, and adjust **Time of day** to change the scene lighting. Wind audio is optional and starts muted.
 
 For a quick tour:
 
