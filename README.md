@@ -2,7 +2,7 @@
 
 # Immersive-Craft
 
-### Interactive 3D studies
+## Interactive 3D studies
 
 **Take objects apart. Build spaces from the ground up. Discover how things fit together.**
 
@@ -60,7 +60,7 @@ Customization and interaction state are held for the current page session; they 
 
 ### Kigumi Pavilion
 
-A Japanese-inspired timber pavilion assembled from its foundation through the roof and shoji screens.
+A Japanese-inspired timber pavilion assembled from its foundation through the roof and shoji screens, set on a dark raised platform in a misty bamboo garden.
 
 ![Timber pavilion frame before roof assembly](docs/images/pavilion-frame.jpg)
 
@@ -74,9 +74,15 @@ A Japanese-inspired timber pavilion assembled from its foundation through the ro
 | 06 | Roof tiles | Overlapping roof cover |
 | 07 | Shoji screens | Timber-and-paper-inspired enclosure |
 
-Hold **Build** to advance through the assembly, or hold **Space** or **Enter** while the button is focused. Scroll over the scene or swipe vertically to move through stages. Complete the six connection studies before continuing to the roof. Completed joints can be replayed individually.
+Hold the circular **築 / Build** button for approximately 0.85 seconds to advance, or hold **Space** or **Enter** while the button is focused. Scroll over the scene or swipe vertically to move through stages. Complete the six connection studies before continuing to the roof. To replay a completed joint after adding the roof, return to **Interlocking joints** on the stage rail.
 
-The joint geometry is an illustrative through-tenon and cross-wedge study. It is not a reconstruction of a particular historic building. Optional garden wind is muted by default; time-of-day controls change the lighting and atmosphere.
+![The timber frame and six completed joint markers with a connection study card](docs/images/pavilion-joinery.jpg)
+
+The status card shows six modeled posts and six joints; its pieces figure counts posts only. Assembly is a seven-stage study rather than a continuous simulation of every individual component.
+
+![The completed pavilion at dawn with roof tiles and shoji screens](docs/images/pavilion-dawn.jpg)
+
+The joint geometry is an illustrative through-tenon and cross-wedge study. It is not a reconstruction of a particular historic building. Optional garden wind is muted by default; time-of-day controls change the lighting and atmosphere. If WebGL 2 is unavailable or the renderer fails, browse stage descriptions in the illustrated fallback and select **Retry 3D view** to try again. Interrupted joint animations do not count as completed.
 
 ### World catalog and design archive
 
@@ -126,7 +132,7 @@ Open the default route to explore Mechanical Garden. Visit `/?world=kigumi` for 
 
 **Mechanical Garden:** drag **Explode** to reveal the assembly, choose a layer to inspect it, and use the customization drawer to change materials. Hover over keys to reveal switch anatomy. Keyboard input can press matching keys.
 
-**Kigumi Pavilion:** hold **Build** to progress through the seven assembly stages. Use the stage rail to revisit unlocked stages, select completed joint markers to replay a connection, and adjust **Time of day** to change the scene lighting. Wind audio is optional and starts muted.
+**Kigumi Pavilion:** hold **築 / Build** to progress through the seven assembly stages. Use the stage rail to revisit unlocked stages, return to **Interlocking joints** and select a completed marker to replay a connection, and adjust **Time of day** to change the scene lighting. Wind audio is optional and starts muted.
 
 For a quick tour:
 

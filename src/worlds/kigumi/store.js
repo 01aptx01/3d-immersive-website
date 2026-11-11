@@ -53,5 +53,13 @@ export const useKigumiStore = create((set) => ({
     jointPhase: 'Locked',
     furthestStage: state.jointMode === 'assemble' && state.jointCount === 5 ? Math.max(state.furthestStage, 3) : state.furthestStage,
   })),
+  cancelJointAnimation: () => set((state) => state.jointAnimating ? ({
+    selectedJoint: -1,
+    jointRunId: state.jointRunId + 1,
+    jointMode: 'assemble',
+    jointPhase: 'Ready',
+    jointAnimating: false,
+    jointInfoOpen: false,
+  }) : state),
   closeJointInfo: () => set({ jointInfoOpen: false }),
 }));
