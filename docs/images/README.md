@@ -4,8 +4,8 @@ These images accompany the root [README](../../README.md). Application images ar
 
 ## Capture context
 
-- **Source revision:** `b8c035017b37993e7b7b452120d7f5da8c32362c`.
-- **Subsequent compatibility review:** `4bf8008c47913d0a75743eb135fb61b29887b16f`. Its pavilion instancing, interaction, shadow, and short-landscape improvements are preserved and documented. These captures record the earlier revision above, whose illustrated subjects and assembly sequence remain applicable.
+- **Source revision:** `9d7306f7ad7d704f1fc7e89b306dd6eaa1e84121`.
+- **Current source:** The captures reflect the current pavilion instancing, interaction, shadow, and short-landscape improvements. The deployed Site still renders the Elsewhere identity inside its experience; its Sites display title is Immersive-Craft.
 - **Capture date:** 11 November 2026, Asia/Bangkok.
 - **Local application:** Vite development server at `http://localhost:5173`.
 - **Browser:** Chromium, automated with Playwright, using a WebGL 2 software renderer in the capture environment.
