@@ -115,7 +115,7 @@ A Japanese-inspired pavilion grows from a quiet garden floor into a complete tim
 | 06 | Roof tiles | Overlapping cover across the roof planes. |
 | 07 | Shoji screens | Timber-and-paper-inspired enclosure around the central opening. |
 
-Hold **Build** for approximately 0.85 seconds to advance. You can also hold **Space** or **Enter** while the control is focused. Scroll over the scene or swipe vertically to step through assembly; previously unlocked stages remain accessible from the rail. Complete all six connection sequences before continuing to the roof.
+Hold the circular **築 / Build** control for approximately 0.85 seconds to advance. You can also hold **Space** or **Enter** while the control is focused. Scroll over the scene or swipe vertically to step through assembly; previously unlocked stages remain accessible from the rail. Complete all six connection sequences before continuing to the roof. The compact status card shows the six modeled posts and six joints; its pieces figure counts posts only, not every modeled component. The experience uses seven stages rather than a continuous part-by-part construction simulation.
 
 ### Connection studies
 
@@ -123,7 +123,7 @@ Hold **Build** for approximately 0.85 seconds to advance. You can also hold **Sp
 
 *Completed connections can be replayed individually from their numbered markers.*
 
-Each connection has a focused animation that exposes, rotates, slides, and locks its components. Select a completed numbered connection to replay it and read the context note.
+Each connection has a focused animation that exposes, rotates, slides, and locks its components. Select a completed numbered connection to replay it and read the context note. After the roof is added, return to **Interlocking joints** on the stage rail to see the markers again.
 
 The geometry is an **illustrative through-tenon and cross-wedge study**. It is not a reconstruction of a historic pavilion or evidence that a particular named joint was used in a specific building. The contextual reference is [Kiyomizu-dera's official architecture history](https://www.kiyomizudera.or.jp/en/learn/).
 
@@ -137,7 +137,7 @@ The geometry is an **illustrative through-tenon and cross-wedge study**. It is n
 
 *The time slider changes the lighting, shadows, sky, and lantern atmosphere.*
 
-Move **Time of day** from dawn through sunset to night. Optional garden wind starts muted and uses a locally bundled, generated OGG loop through Howler.js. Geometry and materials are procedural; the pavilion does not ship with source texture packs or KTX2 textures.
+A dark raised platform, red maple, bamboo grove, gravel, and atmospheric light frame the pavilion. Move **Time of day** from dawn through sunset to night. Optional garden wind starts muted and uses a locally bundled, generated OGG loop through Howler.js. Geometry and materials are procedural; the pavilion does not ship with source texture packs or KTX2 textures.
 
 For rendering efficiency, bamboo foliage, falling leaves, and **220 roof tiles** use instanced meshes. Contact shadows use a bounded, low-resolution render after assembly changes. The interface also includes a compact layout for short landscape viewports.
 
@@ -217,7 +217,7 @@ Favorites use `localStorage` under `elsewhere.favorites.v2` and are shared betwe
 2. React `lazy` and `Suspense` load the selected module with a loading state.
 3. Each world owns its interface, scene, styles, and Zustand store. Controls update state, and scene components reflect those changes.
 4. Repeated keyboard components, garden foliage, and pavilion roof tiles use instanced meshes. GSAP coordinates timed transitions.
-5. The pavilion checks WebGL 2 support and handles renderer errors/context loss with an illustrated fallback.
+5. The pavilion checks WebGL 2 support and handles renderer errors/context loss with an illustrated fallback, stage-description previews, and a retry control.
 
 To add a world, create its scene/interface/store, register a lazy import and routing condition in `main.jsx`, and add metadata to `catalog.js`. A catalog entry alone does not create a working route.
 
@@ -281,7 +281,7 @@ The 3D scenes require **WebGL 2**. Try a current Chrome, Edge, Firefox, or Safar
 
 | Symptom | Explanation and next step |
 | --- | --- |
-| Pavilion displays an illustration | WebGL 2 is unavailable, the renderer failed, or its context was lost. Navigation remains; Build and time controls are disabled. Try a supported browser/device and reload. |
+| Pavilion displays an illustration | WebGL 2 is unavailable, the renderer failed, or its context was lost. Browse the stage descriptions, then use **Retry 3D view** after enabling graphics support. Build and time controls remain disabled until 3D is available; interrupted joint animations do not count as completed. |
 | Keyboard scene is blank | Check graphics support and the console. Its Drei environment preset and text utilities can fetch runtime assets; allow those requests. The keyboard has no illustrated fallback. |
 | Typography looks different | Styles load Google Fonts. Blocked requests can cause fallback fonts. |
 | No sound | Interact with the page to satisfy browser audio policy. Check the sound toggle and system volume. Pavilion wind starts muted. |
