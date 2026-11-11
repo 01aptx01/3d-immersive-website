@@ -55,3 +55,105 @@
   .kigumi-build-status small { font-size: 12px; white-space: normal; line-height: 1.25; }
   .kigumi-joint-card { top: 145px; max-height: 40dvh; overflow-y: auto; }
 }
+/* Shared Immersive-Craft lavender/paper UI, tuned to the keyboard reference. */
+:root {
+  --world-ink: #352d45;
+  --world-plum: #49365f;
+  --world-purple: #765db1;
+  --world-paper: rgba(251, 249, 255, .96);
+  --world-line: rgba(85, 66, 119, .14);
+  --world-shadow: 0 12px 35px rgba(80, 62, 118, .13);
+}
+.kigumi-shell {
+  color: var(--world-ink);
+  background: #ddd5f1;
+  font-family: 'Poppins', 'Nunito Sans', 'Avenir Next', sans-serif;
+}
+.kigumi-shell :is(button, a, input, h1, h2, p, span, b, small, label, i) {
+  font-family: 'Poppins', 'Nunito Sans', 'Avenir Next', sans-serif;
+}
+.kigumi-topbar {
+  background: linear-gradient(180deg, rgba(250, 247, 255, .96), rgba(250, 247, 255, .72));
+  box-shadow: 0 3px 18px rgba(75, 57, 105, .08);
+}
+.kigumi-brand > a { color: var(--world-plum); font-weight: 700; letter-spacing: -.045em; }
+.kigumi-brand > a span { color: #9276cf; }
+.kigumi-brand div { border-color: var(--world-line); }
+.kigumi-brand div b, .kigumi-brand div small { color: #74678c; letter-spacing: .045em; }
+.kigumi-top-copy p { color: var(--world-plum); font-weight: 600; letter-spacing: .045em; }
+.kigumi-top-copy span { color: #7f7493; }
+.kigumi-worlds-link, .kigumi-sound-toggle {
+  border: 1px solid var(--world-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .9);
+  color: var(--world-plum);
+  box-shadow: 0 3px 10px rgba(75, 57, 105, .07);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.kigumi-sound-toggle:hover, .kigumi-worlds-link:hover { background: #fff; border-color: rgba(118, 93, 177, .4); }
+.kigumi-stage-rail, .kigumi-info-card, .kigumi-controls, .kigumi-time-panel, .kigumi-joint-card, .kigumi-build-status, .kigumi-fallback-card {
+  background-color: var(--world-paper);
+  border: 1px solid var(--world-line);
+  border-radius: 18px;
+  box-shadow: var(--world-shadow);
+  backdrop-filter: blur(14px);
+}
+.kigumi-stage-rail { padding: 16px 12px 12px; }
+.kigumi-rail-title, .kigumi-kicker, .kigumi-progress-label, .kigumi-controls small,
+.kigumi-time-heading > span, .kigumi-time-stops, .kigumi-build-status span, .kigumi-build-status small {
+  color: #827692;
+  letter-spacing: .045em;
+  font-weight: 500;
+}
+.kigumi-stage-button { border-top-color: rgba(85, 66, 119, .09); border-radius: 11px; color: #514662; }
+.kigumi-stage-button:hover, .kigumi-stage-button.active { background: #f1ebff; color: #503c78; }
+.kigumi-stage-button.complete i { color: #6e9a83; }
+.kigumi-stage-button b { font-weight: 500; color: inherit; }
+.kigumi-stage-button small { color: #8f85a0; }
+.kigumi-rail-note { border-top-color: var(--world-line); color: #81768f; }
+.kigumi-info-card { padding: 18px 19px 15px; }
+.kigumi-info-card h1, .kigumi-joint-card h2, .kigumi-fallback-card h2 { color: var(--world-ink); font-weight: 600; }
+.kigumi-info-card p, .kigumi-joint-card p, .kigumi-fallback-card p { color: #6e657c; }
+.kigumi-kicker { color: #765db1; }
+.kigumi-progress { height: 4px; border-radius: 99px; background: #e6def4; }
+.kigumi-progress span { border-radius: inherit; background: linear-gradient(90deg, #a88be3, #7458af); }
+.kigumi-progress-label b { color: var(--world-plum); }
+.kigumi-controls { gap: 10px; border-radius: 999px; }
+.kigumi-controls button:not(.kigumi-build-button) { border-radius: 50%; border-color: var(--world-line); background: #fff; color: var(--world-plum); }
+.kigumi-controls b { color: var(--world-plum); font-weight: 500; }
+.kigumi-controls .kigumi-build-button, .kigumi-fallback-retry {
+  border: 0;
+  border-radius: 999px;
+  background: var(--world-plum);
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(73, 54, 95, .22);
+}
+.kigumi-controls .kigumi-build-button:hover, .kigumi-fallback-retry:hover { background: #604b7e; }
+.kigumi-build-status { border-radius: 16px; }
+.kigumi-build-status > div + div { border-left-color: var(--world-line); }
+.kigumi-build-status b { color: var(--world-plum); }
+.kigumi-time-panel { border-radius: 16px; }
+.kigumi-time-heading > b { color: var(--world-plum); font-weight: 600; }
+.kigumi-time-panel input { border-radius: 99px; }
+.kigumi-time-panel input::-webkit-slider-thumb { border-color: #765db1; background: #fff; }
+.kigumi-time-panel input::-moz-range-thumb { border-color: #765db1; background: #fff; }
+.kigumi-joint-card { border-radius: 18px; }
+.kigumi-joint-close { border-radius: 50%; color: var(--world-plum); }
+.kigumi-joint-marker { border-color: #9a83cb !important; border-radius: 50% !important; background: #faf7ff !important; color: var(--world-plum) !important; }
+.kigumi-build-help { color: #736887; }
+.kigumi-fallback-card { border-radius: 20px; }
+.kigumi-fallback-links a { border-radius: 11px; color: var(--world-plum); }
+.kigumi-shell :is(button, a, input):focus-visible { outline-color: #765db1; }
+@media (max-width: 800px) {
+  .kigumi-stage-rail, .kigumi-info-card, .kigumi-controls, .kigumi-time-panel, .kigumi-build-status { border-radius: 15px; }
+  .kigumi-topbar { padding-inline: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kigumi-shell *, .kigumi-shell *::before, .kigumi-shell *::after { scroll-behavior: auto; }
+}
+.kigumi-stage-button:disabled { opacity: .78; }
+.kigumi-stage-button b { color: #43384f; font-size: 13px; }
+.kigumi-stage-button small, .kigumi-stage-number { color: #6f6480; font-size: 12px; }
+.kigumi-rail-note { color: #625770; }

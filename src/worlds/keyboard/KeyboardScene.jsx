@@ -1,6 +1,6 @@
-import { useMemo, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { ContactShadows, Environment, OrbitControls, Text } from '@react-three/drei';
+import { useEffect, useMemo, useRef } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { ContactShadows, Environment, OrbitControls, RoundedBox, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { useKeyboardStore, KEYBOARD_PALETTES, PLATE_FINISHES } from './store';
 
@@ -107,6 +107,15 @@ function KeyboardAssembly({ color }) {
     housing: new THREE.BoxGeometry(1, 1, 1),
     stem: new THREE.BoxGeometry(1, 1, 1),
   }), []);
+  const capColors = useMemo(() => {
+    const mint = new THREE.Color(color.board).lerp(new THREE.Color('#84d6cd'), 0.62);
+    return KEYBOARD_KEYS.map((key) => {
+      const pinkAccent = (key.row === 0 && [1, 4, 7, 10].includes(key.col)) || (key.row === 2 && [2, 5, 8].includes(key.col)) || (key.row === 4 && [1, 4, 7].includes(key.col));
+      const mintAccent = (key.row === 1 && [2, 5, 8, 11].includes(key.col)) || (key.row === 3 && [3, 6, 9].includes(key.col));
+      return new THREE.Color(pinkAccent ? color.accent : mintAccent ? mint : color.key);
+    });
+  }, [color]);
+  const hoverColor = useMemo(() => new THREE.Color(color.accent), [color]);
   const amount = Math.min(100, Math.max(0, explode)) / 100;
   const layerOpacity = (layer) => isolatedLayer === 'All layers' || isolatedLayer === layer ? 1 : 0.15;
   const matProps = (layer) => ({ transparent: layerOpacity(layer) < 1, opacity: layerOpacity(layer), depthWrite: layerOpacity(layer) === 1 });
@@ -131,7 +140,7 @@ function KeyboardAssembly({ color }) {
       const capY = 0.39 + offsets.caps + (isHovered ? 0.4 : 0) - press;
       const capMatrix = new THREE.Matrix4().compose(new THREE.Vector3(key.x, capY, key.z), new THREE.Quaternion(), new THREE.Vector3(key.width, 0.2, KEY_D));
       caps.current.setMatrixAt(i, capMatrix);
-      caps.current.setColorAt(i, new THREE.Color(isHovered ? color.accent : color.key));
+      caps.current.setColorAt(i, isHovered ? hoverColor : capColors[i]);
 
       const lowerY = 0.245 + offsets.switches;
       const lower = new THREE.Matrix4().compose(new THREE.Vector3(key.x, lowerY, key.z), new THREE.Quaternion(), new THREE.Vector3(0.27, 0.09, 0.27));
@@ -182,7 +191,7 @@ function KeyboardAssembly({ color }) {
   return <group>
     {layerOpacity('Case') > 0 && <mesh position={[0, -0.055, 0]} receiveShadow castShadow onClick={(e) => isolateLayer('Case', e)}>
       <boxGeometry args={[8.4, 0.44, 3.45]} />
-      <meshStandardMaterial color={caseColor} metalness={0.28} roughness={0.4} {...matProps('Case')} />
+      <meshStandardMaterial color={caseColor} metalness={0.08} roughness={0.62} {...matProps('Case')} />
     </mesh>}
     {layerOpacity('Foam') > 0 && <mesh position={[0, 0.18 + offsets.foam, 0]} receiveShadow castShadow onClick={(e) => isolateLayer('Foam', e)}>
       <boxGeometry args={[8.16, 0.09, 3.22]} />
@@ -234,24 +243,144 @@ function FloatingDust() {
   </mesh>)}</group>;
 }
 
+function DeskProps() {
+  const caps = [
+    { position: [3.18, -0.202, 2.0], color: '#e9a8bd', rotation: [0, -0.22, 0.08] },
+    { position: [3.63, -0.202, 2.14], color: '#8ed6cb', rotation: [0, 0.28, -0.08] },
+    { position: [3.45, -0.202, 2.38], color: '#f1d9d9', rotation: [0, -0.42, 0.08] },
+  ];
+  return <group>
+    <RoundedBox args={[9.65, 0.055, 4.8]} radius={0.02} smoothness={4} position={[0, -0.31, 0]} receiveShadow castShadow>
+      <meshStandardMaterial color="#bfb3e3" roughness={0.76} />
+    </RoundedBox>
+      <mesh position={[0, -0.282, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <planeGeometry args={[9.15, 4.15]} />
+      <meshStandardMaterial color="#d2c9ee" roughness={0.95} />
+    </mesh>
+    {/* Small desk objects frame the board while keeping all keys unobstructed. */}
+    <group position={[-3.55, -0.282, 1.88]} rotation={[0, 0.16, 0]}>
+      <mesh position={[0, 0.225, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.34, 0.27, 0.45, 8]} />
+        <meshStandardMaterial color="#e99ab0" roughness={0.52} />
+      </mesh>
+      <mesh position={[0, 0.455, 0]}>
+        <cylinderGeometry args={[0.29, 0.29, 0.035, 8]} />
+        <meshStandardMaterial color="#725b56" roughness={1} />
+      </mesh>
+      {[
+        [-0.16, 0.78, -0.02, 0.18, 0.32, 0.13, '#73c5a7'],
+        [0.12, 0.83, 0.06, 0.17, 0.36, 0.12, '#80d3b5'],
+        [0.02, 0.73, -0.12, 0.19, 0.3, 0.12, '#62b996'],
+        [-0.03, 0.98, 0.14, 0.13, 0.28, 0.1, '#96dfbf'],
+      ].map(([x, y, z, sx, sy, sz, color], i) => <mesh key={i} position={[x, y, z]} scale={[sx, sy, sz]} rotation={[0.12, i * 0.8, -0.28 + i * 0.15]} castShadow>
+        <sphereGeometry args={[1, 8, 6]} />
+        <meshStandardMaterial color={color} roughness={0.7} />
+      </mesh>)}
+    </group>
+    <group position={[2.42, -0.282, 1.88]} rotation={[0, -0.12, 0]}>
+      <mesh position={[0, 0.358, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.39, 0.33, 0.72, 24]} />
+        <meshStandardMaterial color="#d1a34f" roughness={0.3} metalness={0.04} />
+      </mesh>
+      <mesh position={[0, 0.74, 0]}>
+        <torusGeometry args={[0.35, 0.045, 8, 24]} />
+        <meshStandardMaterial color="#f2cc7e" roughness={0.3} />
+      </mesh>
+      <mesh position={[0.43, 0.42, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.24, 0.075, 8, 24]} />
+        <meshStandardMaterial color="#d1a34f" roughness={0.32} />
+      </mesh>
+      <mesh position={[0, 0.735, 0]}>
+        <circleGeometry args={[0.31, 24]} />
+        <meshStandardMaterial color="#8b705c" roughness={0.4} />
+      </mesh>
+    </group>
+    {caps.map((cap, i) => <group key={i} position={cap.position} rotation={cap.rotation}>
+      <mesh castShadow receiveShadow><boxGeometry args={[0.42, 0.16, 0.42]} /><meshStandardMaterial color={cap.color} roughness={0.34} /></mesh>
+      <mesh position={[0, 0.083, 0]}><boxGeometry args={[0.25, 0.008, 0.25]} /><meshStandardMaterial color="#fffaf8" roughness={0.5} /></mesh>
+    </group>)}
+  </group>;
+}
+
+function ExplodeCamera({ controls, dragging, basePolarAngle, targetPolarAngle }) {
+  const camera = useThree((state) => state.camera);
+  const explodeStage = useKeyboardStore((state) => state.explodeStage);
+  const previousExplode = useRef(explodeStage);
+
+  useFrame((_, delta) => {
+    const orbit = controls.current;
+    if (!orbit || dragging.current) return;
+
+    const explode = Math.min(100, Math.max(0, explodeStage)) / 100;
+    if (basePolarAngle.current === null) basePolarAngle.current = orbit.getPolarAngle();
+    const nextTarget = THREE.MathUtils.clamp(basePolarAngle.current + explode * 0.34, 0.58, 1.48);
+    if (targetPolarAngle.current === null || previousExplode.current !== explodeStage) {
+      targetPolarAngle.current = nextTarget;
+      previousExplode.current = explodeStage;
+    }
+
+    const currentPolarAngle = orbit.getPolarAngle();
+    const nextPolarAngle = THREE.MathUtils.damp(currentPolarAngle, targetPolarAngle.current, 2.4, delta);
+    if (Math.abs(nextPolarAngle - currentPolarAngle) < 0.001) return;
+
+    const offset = camera.position.clone().sub(orbit.target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    spherical.phi = nextPolarAngle;
+    camera.position.copy(orbit.target).add(new THREE.Vector3().setFromSpherical(spherical));
+    camera.lookAt(orbit.target);
+    orbit.update();
+  });
+
+  return null;
+}
+
+function ResponsiveKeyboardCamera({ controls }) {
+  const { camera, size } = useThree();
+  const mobile = size.width <= 600;
+  const previousMobile = useRef(null);
+
+  useEffect(() => {
+    if (previousMobile.current === mobile) return;
+    previousMobile.current = mobile;
+    camera.fov = mobile ? 68 : 39;
+    camera.position.setLength(camera.position.length() * (mobile ? 1.06 : 1 / 1.06));
+    camera.updateProjectionMatrix();
+    controls.current?.update();
+  }, [camera, controls, mobile]);
+
+  return null;
+}
+
 export default function KeyboardScene() {
   const paletteName = useKeyboardStore((s) => s.palette);
   const palette = KEYBOARD_PALETTES[paletteName];
-  return <Canvas shadows dpr={[1, 1.65]} camera={{ position: [0, 5.8, 8.6], fov: 37 }} gl={{ antialias: true, alpha: true }}>
+  const controls = useRef(null);
+  const dragging = useRef(false);
+  const basePolarAngle = useRef(null);
+  const targetPolarAngle = useRef(null);
+  return <Canvas shadows dpr={[1, 1.65]} camera={{ position: [0, 6.65, 10.25], fov: 39 }} gl={{ antialias: true, alpha: true }}>
     <fog attach="fog" args={['#f2ddeb', 12, 24]} />
-    <ambientLight intensity={1.25} />
-    <spotLight position={[-5, 8, 4]} intensity={92} color="#fff4f4" angle={0.4} penumbra={0.7} castShadow shadow-mapSize={[1024, 1024]} />
-    <pointLight position={[5, 3, -4]} intensity={28} color="#e4c8f4" />
-    <Environment preset="studio" />
+    <ambientLight intensity={0.58} />
+    <spotLight position={[-5, 8, 4]} intensity={22} color="#fff4f4" angle={0.4} penumbra={0.7} castShadow shadow-mapSize={[1024, 1024]} />
+    <pointLight position={[5, 3, -4]} intensity={6} color="#e4c8f4" />
+    <Environment preset="studio" environmentIntensity={0.4} />
     <mesh position={[0, -0.34, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
       <planeGeometry args={[200, 200]} />
-      <meshStandardMaterial color="#f1dce8" roughness={0.82} metalness={0.01} />
+      <meshStandardMaterial color="#e7b7d5" roughness={0.82} metalness={0.01} />
     </mesh>
     <group rotation={[-0.12, -0.13, 0]}>
+      <DeskProps />
       <KeyboardAssembly color={palette} />
     </group>
-    <ContactShadows position={[0, -0.32, 0]} opacity={0.52} scale={12} blur={2.6} far={4} />
+    <ContactShadows position={[0, -0.279, 0]} opacity={0.4} scale={12} blur={2.6} far={4} />
     <FloatingDust />
-    <OrbitControls enablePan={false} minDistance={6.8} maxDistance={13.5} minPolarAngle={0.58} maxPolarAngle={1.48} rotateSpeed={0.42} />
+    <OrbitControls ref={controls} enablePan={false} minDistance={7.2} maxDistance={15} minPolarAngle={0.58} maxPolarAngle={1.48} rotateSpeed={0.42} onStart={() => { dragging.current = true; }} onEnd={() => {
+      const explode = Math.min(100, Math.max(0, useKeyboardStore.getState().explodeStage)) / 100;
+      if (controls.current) basePolarAngle.current = controls.current.getPolarAngle() - explode * 0.34;
+      targetPolarAngle.current = null;
+      dragging.current = false;
+    }} />
+    <ResponsiveKeyboardCamera controls={controls} />
+    <ExplodeCamera controls={controls} dragging={dragging} basePolarAngle={basePolarAngle} targetPolarAngle={targetPolarAngle} />
   </Canvas>;
 }

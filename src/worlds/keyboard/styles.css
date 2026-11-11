@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 :root{font-family:'DM Sans',Inter,ui-sans-serif,system-ui,sans-serif;color:#3a334a;background:#eee8fb;font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;font-optical-sizing:auto;font-weight:400;font-size:14px;--ink:#3b344b;--muted:#8b849b;--purple:#8971d7;--mono:'DM Sans',monospace}
 *{box-sizing:border-box}html,body,#root{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden}body{background:#eee8fb}button,a,input{font:inherit}button{color:inherit;cursor:pointer}a{color:inherit;text-decoration:none}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #8a75d7;outline-offset:3px}
@@ -26,3 +27,166 @@
   .explode-panel { min-height: 68px; }
 }
 @media (max-width: 430px) { .layer-rail button { font-size: 12px; min-width: 72px; padding: 0 6px; } }
+
+/* Reference inspired pastel workbench. */
+:root { --ink: #39304d; --muted: #897f9e; --purple: #68518f; --mono: 'Poppins', sans-serif; font-family: 'Poppins', 'DM Sans', sans-serif; color: var(--ink); }
+.world-shell { background: linear-gradient(135deg, #f0eaff 0%, #f7e8f5 52%, #ffe9ec 100%); }
+.grain { opacity: .012; }
+.topbar { height: 72px; padding: 0 32px; background: rgba(255,255,255,.78); border-bottom: 1px solid rgba(98,78,132,.11); backdrop-filter: blur(16px); }
+.brand-lockup { column-gap: 9px; }
+.brand { font-size: 19px; font-weight: 700; letter-spacing: -.065em; color: #382d4d; }
+.brand-dot { color: #8063bb; }
+.board-badge { border-radius: 8px; background: #e8dcfa; color: #6f5a98; font: 600 10px 'Poppins',sans-serif; }
+.brand-lockup p { margin-top: 5px; color: #766b8c; font-size: 10px; font-weight: 400; letter-spacing: .005em; }
+.top-actions { gap: 7px; }
+.icon-btn,.worlds-toggle,.customize-toggle,.sound-toggle { box-shadow: 0 4px 14px rgba(65,47,92,.08); }
+.icon-btn { width: 36px; height: 34px; border-radius: 50%; background: #fff; }
+.sound-toggle { height: 36px; padding: 4px; border-radius: 20px; background: #fff; }
+.sound-toggle button { height: 27px; padding: 0 12px; border-radius: 15px; font-size: 11px; color: #817793; }
+.sound-toggle button.selected { background: #eee7f8; color: #493a66; box-shadow: none; font-weight: 600; }
+.worlds-toggle { height: 36px; padding: 0 15px; border-radius: 20px; background: rgba(255,255,255,.9); color: #5e5075; font-size: 11px; font-weight: 500; }
+.worlds-toggle span { font: 500 10px 'Poppins',sans-serif; color: #9589a9; }
+.customize-toggle { height: 36px; padding: 0 17px; border-radius: 20px; background: #403251; color: #fff; border-color: #403251; font-size: 11px; font-weight: 500; }
+.customize-toggle.active,.customize-toggle:hover { background: #514066; color: #fff; }
+.customize-toggle span { font-size: 16px; }
+.scene-aura { width: min(80vw, 1050px); height: min(75vw, 900px); top: 52%; background: radial-gradient(ellipse,rgba(255,255,255,.72),rgba(242,229,251,.4) 48%,transparent 75%); }
+.canvas-wrap { inset: 5px 0 0; }
+.layer-info-card,.settings-drawer,.explode-panel { border: 1px solid rgba(105,83,137,.12); background: rgba(255,255,255,.94); box-shadow: 0 12px 38px rgba(81,62,111,.14); backdrop-filter: blur(18px); }
+.layer-info-card { left: 24px; top: 95px; width: 260px; padding: 16px 17px; border-radius: 18px; }
+.layer-card-kicker { color: #827797; font: 500 10px 'Poppins',sans-serif; letter-spacing: .035em; text-transform: none; }
+.layer-info-card h1 { margin: 7px 0 12px; color: #392f4d; font: 600 18px 'Poppins',sans-serif; }
+.layer-facts { gap: 7px 10px; padding-bottom: 12px; border-color: rgba(105,83,137,.14); }
+.layer-facts span { color: #80768f; font-size: 10px; }
+.layer-facts b { color: #594c70; font: 500 10px 'Poppins',sans-serif; }
+.layer-info-card p { color: #776e86; font-size: 10px; line-height: 1.65; }
+.show-layers { min-height: 36px; border-radius: 11px; background: #eee8f8; color: #604a83; font-size: 11px; }
+.layer-rail { left: 24px; top: 45%; gap: 7px; }
+.layer-rail button { min-width: 138px; height: 34px; padding: 0 11px 0 7px; gap: 8px; border-color: rgba(101,81,128,.1); border-radius: 22px; background: rgba(255,255,255,.9); box-shadow: 0 4px 14px rgba(75,56,103,.09); color: #655a78; font-size: 10px; font-weight: 500; }
+.layer-rail button:hover { transform: translateX(3px); }
+.layer-rail button.selected { background: #514066; color: white; border-color: #514066; }
+.layer-rail-number { width: 22px; height: 22px; border-radius: 50%; background: #eee7fa; color: #735ba0; font: 500 10px 'Poppins',sans-serif; }
+.layer-rail button.selected .layer-rail-number { background: #8069ad; color: #fff; }
+.interaction-hint { bottom: 105px; padding: 8px 15px; border-radius: 18px; background: rgba(255,255,255,.84); color: #6f6483; font-size: 10px; box-shadow: 0 4px 14px rgba(75,56,103,.08); }
+.explode-panel { bottom: 17px; width: min(550px, calc(100vw - 590px)); min-width: 370px; padding: 13px 17px 11px; border-radius: 18px; }
+.explode-heading { gap: 12px; margin-bottom: 10px; }
+.explode-heading strong { color: #493a63; font: 600 12px 'Poppins',sans-serif; }
+.explode-heading span { color: #7f748e; font-size: 10px; }
+.explode-heading b { color: #6d58a0; font: 600 11px 'Poppins',sans-serif; }
+.explode-slider { height: 7px; border-radius: 10px; }
+.explode-slider::-webkit-slider-thumb { width: 19px; height: 19px; border-radius: 50%; border: 3px solid #fff; background: #6e56a1; box-shadow: 0 2px 7px rgba(75,55,105,.3); }
+.explode-slider::-moz-range-thumb { width: 15px; height: 15px; border-radius: 50%; border: 3px solid #fff; background: #6e56a1; box-shadow: 0 2px 7px rgba(75,55,105,.3); }
+.slider-caption { color: #827891; font: 9px 'Poppins',sans-serif; }
+.settings-drawer { top: 86px; right: 22px; width: 286px; max-height: calc(100dvh - 102px); overflow-y: auto; padding: 17px; border-radius: 20px; }
+.drawer-head { margin-bottom: 14px; }
+.drawer-head .eyebrow { color: #857994; font: 500 10px 'Poppins',sans-serif; letter-spacing: .07em; }
+.drawer-head h2 { margin: 4px 0 0; color: #392f4d; font: 600 20px 'Poppins',sans-serif; }
+.close-btn { width: 30px; height: 30px; border-radius: 50%; background: #f4f0fa; font-size: 19px; }
+.field-label { margin-bottom: 8px; color: #6e627e; font: 500 10px 'Poppins',sans-serif; letter-spacing: .025em; }
+.field-label span { color: #675585; font-size: 10px; font-weight: 600; }
+.palette-options { gap: 7px; }
+.palette-option { min-height: 44px; padding: 8px; gap: 7px; flex-wrap: nowrap; border: 1px solid rgba(94,75,122,.12); border-radius: 12px; background: #fff; color: #574c69; font-size: 10px; font-weight: 500; }
+.palette-option:hover,.palette-option.selected { border-color: #9d88c5; background: #fbf9ff; box-shadow: 0 3px 11px rgba(123,101,179,.12); }
+.swatches { gap: 3px; }
+.swatches i { width: 12px; height: 12px; border-radius: 50%; }
+.customize-section { padding-top: 14px; margin-top: 13px; border-color: rgba(94,75,122,.12); }
+.case-swatches { gap: 6px; }
+.case-swatch { width: 30px; height: 30px; }
+.plate-options button { min-height: 34px; padding: 0 8px; border-radius: 10px; background: #fff; color: #685d79; font-size: 10px; }
+.plate-options button.selected { background: #eee8f8; border-color: #a594d0; color: #594378; }
+.field-value { color: #6f5a9b; font: 500 10px 'Poppins',sans-serif; }
+.travel-slider { height: 6px; }
+.travel-slider::-webkit-slider-thumb { width: 16px; height: 16px; background: #7259a3; }
+.field-help { margin: 13px 0 0; color: #7f748e; font-size: 10px; line-height: 1.55; }
+.worlds-backdrop { background: rgba(55,44,73,.25); }
+.worlds-panel { padding: 28px; background: rgba(255,255,255,.97); border-radius: 22px 0 0 22px; }
+.worlds-panel .drawer-head h2 { font-size: 26px; }
+.panel-intro { color: #7f748e; font-size: 12px; line-height: 1.65; }
+.world-list { gap: 10px; }
+.world-list-item { gap: 12px; padding: 12px; border-radius: 14px; }
+.world-list-copy small,.world-list-status { font: 500 10px 'Poppins',sans-serif; }
+.world-list-copy b { font: 500 14px 'Poppins',sans-serif; }
+.archive-link { font-size: 11px; }
+.micro-footer { bottom: 7px; color: #877d93; font: 9px 'Poppins',sans-serif; }
+@media (max-width: 760px) {
+  .topbar { height: 64px; padding: 0 14px; }
+  .brand { font-size: 16px; }
+  .top-actions { gap: 5px; }
+  .icon-btn { width: 32px; }
+  .worlds-toggle { display: inline-flex; align-items: center; height: 34px; padding: 0 10px; font-size: 10px; }
+  .customize-toggle { height: 34px; padding: 0 12px; font-size: 10px; }
+  .settings-drawer { top: 72px; right: 10px; width: min(300px, calc(100vw - 20px)); max-height: calc(100dvh - 85px); padding: 15px; }
+  .layer-info-card { display: none; }
+  .layer-rail { top: auto; bottom: 104px; left: 10px; width: calc(100% - 20px); overflow-x: auto; justify-content: flex-start; padding: 3px; }
+  .layer-rail button { min-width: 116px; flex: 0 0 auto; }
+  .explode-panel { left: 10px; right: 10px; bottom: 10px; width: auto; min-width: 0; padding: 11px 13px 10px; border-radius: 16px; }
+  .explode-heading { margin-bottom: 9px; }
+  .explode-heading strong { font-size: 11px; }
+  .explode-heading span { font-size: 10px; }
+  .slider-caption { font-size: 8px; }
+  .interaction-hint { bottom: 175px; max-width: calc(100% - 32px); text-align: center; white-space: normal; }
+  .canvas-wrap { inset: 60px -10vw 155px; }
+  .micro-footer { display: none; }
+}
+@media (max-width: 430px) {
+  .topbar { padding: 0 10px; }
+  .brand-lockup p { display: none; }
+  .brand { font-size: 15px; }
+  .board-badge { display: none; }
+  .top-actions { gap: 4px; }
+  .sound-toggle { display: none; }
+  .worlds-toggle { display: none; }
+  .customize-toggle { padding: 0 11px; }
+  .layer-rail button { min-width: 112px; min-height: 40px; font-size: 10px; }
+  .layer-rail-number { width: 20px; height: 20px; font-size: 9px; }
+  .interaction-hint { bottom: 171px; font-size: 9px; }
+  .explode-panel { bottom: 8px; }
+  .slider-caption { font-size: 7px; }
+  .palette-options { grid-template-columns: 1fr 1fr; }
+  .palette-option { min-height: 40px; padding: 6px; font-size: 9px; }
+}
+
+/* Keep layer controls quiet until the user starts the exploded-view journey. */
+.layer-rail, .layer-info-card {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 220ms ease, visibility 220ms;
+}
+.layer-rail { transform: translateX(-8px); }
+.layer-rail.is-exploded, .layer-info-card.is-exploded {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+/* Comfortable reading scale while preserving the compact reference layout. */
+.top-actions button { font-size: 12px; }
+.brand-lockup p { font-size: 11px; }
+.layer-card-kicker, .layer-facts span, .layer-facts b,
+.layer-info-card p, .show-layers, .layer-rail button,
+.interaction-hint, .explode-heading span, .explode-heading b,
+.slider-caption, .drawer-head .eyebrow, .field-label,
+.field-label span, .field-value, .field-help,
+.plate-options button, .palette-option { font-size: 11px; }
+.layer-info-card h1 { font-size: 20px; }
+.drawer-head h2 { font-size: 22px; }
+.explode-heading strong { font-size: 13px; }
+.layer-rail-number { font-size: 11px; }
+@media (max-width: 760px) {
+  /* GSAP leaves the desktop centering transform inline after its entrance tween. */
+  .explode-panel { transform: none !important; }
+  .layer-rail, .layer-info-card { transform: translateY(6px); }
+  .layer-rail.is-exploded, .layer-info-card.is-exploded { transform: translateY(0); }
+  .layer-info-card.is-exploded { display: block; top: 74px; left: 10px; width: min(250px, calc(100vw - 20px)); }
+  .layer-rail button { font-size: 11px; }
+  .interaction-hint { font-size: 10px; }
+  .palette-option, .plate-options button, .field-label, .field-help { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .layer-rail, .layer-info-card { transition: none; }
+}
+
+@media (max-width: 760px) {
+  .world-shell.settings-open .layer-info-card.is-exploded { display: none; }
+}
