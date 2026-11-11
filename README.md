@@ -44,6 +44,12 @@ The live site and GitHub source can change independently. The descriptions below
 
 ## Features
 
+### World previews
+
+![Immersive-Craft home page showing a live Mechanical Garden preview and world controls](docs/images/worlds-home.jpg)
+
+The home page plays a rotating live preview of the two implemented worlds. Use the arrows or indicators to choose a world, pause the preview, or open the featured experience. Previews stop cycling when the page is hidden or reduced motion is enabled; the planned worlds are not yet playable.
+
 ### Mechanical Garden
 
 An interactive study of a 65%-style mechanical keyboard.
@@ -90,7 +96,7 @@ The application catalog lists two implemented worlds and two planned concepts:
 
 | World | Status | Local route |
 | --- | --- | --- |
-| Mechanical Garden | Implemented | `/` or `/?world=mechanical-garden` |
+| Mechanical Garden | Implemented | `/?world=mechanical-garden` or `/world/keyboard` |
 | Kigumi Pavilion | Implemented | `/?world=kigumi` or `/world/kigumi` |
 | Aurora Drift | Planned concept | Not available |
 | Mosslight Grove | Planned concept | Not available |
@@ -128,7 +134,7 @@ Open the local URL printed by Vite, normally [http://localhost:5173](http://loca
 
 ## Usage
 
-Open the default route to explore Mechanical Garden. Visit `/?world=kigumi` for Kigumi Pavilion.
+Open `/` to browse rotating world previews. Choose a world or visit `/?world=mechanical-garden` for the keyboard and `/?world=kigumi` for Kigumi Pavilion.
 
 **Mechanical Garden:** drag **Explode** to reveal the assembly, choose a layer to inspect it, and use the customization drawer to change materials. Hover over keys to reveal switch anatomy. Keyboard input can press matching keys.
 
@@ -136,7 +142,7 @@ Open the default route to explore Mechanical Garden. Visit `/?world=kigumi` for 
 
 For a quick tour:
 
-1. Open `/`, move the Explode control, and select a keyboard layer.
+1. Open `/` and choose Mechanical Garden, then move the Explode control and select a keyboard layer.
 2. Change a keycap palette or case finish.
 3. Open `/?world=kigumi`, advance through the assembly, and replay a completed joint.
 4. Move the time control toward night and enable wind if desired.
@@ -145,7 +151,7 @@ For a quick tour:
 
 ### Routes and state
 
-The app entry in [src/main.jsx](src/main.jsx) selects the world from the URL. The pavilion is selected by `?world=kigumi` or the exact path `/world/kigumi`; other values open Mechanical Garden. React lazy-loads each world.
+The app entry in [src/main.jsx](src/main.jsx) selects the world from the URL. The pavilion is selected by `?world=kigumi` or `/world/kigumi`; the keyboard uses `?world=mechanical-garden` or `/world/keyboard`. The root route shows the world previews. React lazy-loads each world.
 
 World state uses Zustand in the browser session. The React worlds do not persist preferences or progress across reloads. The standalone wireframes use their own local storage keys and do not configure the 3D application.
 
@@ -165,7 +171,7 @@ Deploy the generated `dist/` directory to a static host. The wireframe archive i
 node -e "require('node:fs').cpSync('wireframes', 'dist/wireframes', { recursive: true })"
 ```
 
-For direct visits to `/world/kigumi`, configure the host to serve `index.html` as the SPA fallback. The query route `/?world=kigumi` works without that path rewrite. The repository does not include an automated publishing pipeline for the linked ChatGPT Site; pushing to GitHub does not publish that site.
+For direct visits to `/world/kigumi` or `/world/keyboard`, configure the host to serve `index.html` as the SPA fallback. The query route `/?world=kigumi` works without that path rewrite. The repository does not include an automated publishing pipeline for the linked ChatGPT Site; pushing to GitHub does not publish that site.
 
 ### Technology and project structure
 
