@@ -2,7 +2,7 @@
 
 # Immersive-Craft
 
-### Interactive 3D studies
+## Interactive 3D studies
 
 **Take objects apart. Build spaces from the ground up. Discover how things fit together.**
 
