@@ -7,7 +7,7 @@ export const useKeyboardStore = create((set) => ({
   soundEnabled: true,
   travel: 0.58,
   palette: 'Milkshake',
-  caseColor: '#f4f0fa',
+  caseColor: '#baa9db',
   plateFinish: 'Aluminum',
   soundType: 'Thock',
   explodeStage: 0,

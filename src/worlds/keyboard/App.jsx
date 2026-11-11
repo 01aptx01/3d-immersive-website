@@ -121,7 +121,7 @@ export default function App() {
     gsap.fromTo('.layer-info-card, .customize-panel, .explode-panel', { y: 10, opacity: 0 }, { y: 0, opacity: 1, duration: 0.65, stagger: 0.08, ease: 'power2.out' });
   }, []);
 
-  return <main className="world-shell" ref={shell}>
+  return <main className={`world-shell ${showSettings ? 'settings-open' : ''}`} ref={shell}>
     <div className="grain" aria-hidden="true" />
     <WorldHeader className="topbar">
       <div className="brand-lockup">
@@ -140,17 +140,17 @@ export default function App() {
     <section className="scene-stage" aria-label="Interactive Mechanical Garden 3D world">
       <div className="scene-aura" />
       <div className="canvas-wrap"><KeyboardScene /></div>
-      <aside className="layer-info-card">
+      <aside className={`layer-info-card ${explodeStage > 4 ? 'is-exploded' : ''}`}>
         <div className="layer-card-kicker"><span>Layer {currentLayerIndex + 1} of 6</span><span className="layer-card-arrows">⌃ <b>⌄</b></span></div>
         <h1>{currentLayer.name}</h1>
         <div className="layer-facts"><span>Key count</span><b>{KEYBOARD_KEYS.length} keys</b><span>Profile</span><b>{currentLayer.name === 'Keycaps' ? 'XDA · one height' : '65% · compact'}</b><span>Legends</span><b>{currentLayer.name === 'Keycaps' ? 'Dye-sublimated' : currentLayer.detail.split(' · ')[0]}</b></div>
         <p>{currentLayer.detail}. Each layer stays aligned as the board comes apart.</p>
         <button className="show-layers" onClick={() => setIsolatedLayer('All layers')}>Show all layers</button>
       </aside>
-      <nav className="layer-rail" aria-label="Keyboard assembly layers">{LAYER_DETAILS.map((layer, index) => <button key={layer.name} className={isolatedLayer === layer.name ? 'selected' : ''} onClick={() => setIsolatedLayer(isolatedLayer === layer.name ? 'All layers' : layer.name)} aria-pressed={isolatedLayer === layer.name}><span className="layer-rail-number">{index + 1}</span><span>{layer.name}</span></button>)}</nav>
+      <nav className={`layer-rail ${explodeStage > 4 ? 'is-exploded' : ''}`} aria-label="Keyboard assembly layers">{LAYER_DETAILS.map((layer, index) => <button key={layer.name} className={isolatedLayer === layer.name ? 'selected' : ''} onClick={() => setIsolatedLayer(isolatedLayer === layer.name ? 'All layers' : layer.name)} aria-pressed={isolatedLayer === layer.name}><span className="layer-rail-number">{index + 1}</span><span>{layer.name}</span></button>)}</nav>
       <div className="interaction-hint">{selected === null ? 'Type on your keyboard · drag to turn' : `${KEYBOARD_KEYS[selected]?.label ?? ''} key · switch exposed`}</div>
       <div className="explode-panel">
-        <div className="explode-heading"><strong>Explode</strong><span>Sliding the case out</span><b>{explodeStage}%</b></div>
+        <div className="explode-heading"><strong>Explode</strong><span>{explodeStage === 0 ? 'Assembled' : 'Pull it apart, layer at a time'}</span><b>{explodeStage}%</b></div>
         <input className="explode-slider" type="range" min="0" max="100" step="1" value={explodeStage} style={{ background: `linear-gradient(90deg,#8b73dd 0%,#8b73dd ${explodeStage}%,#ded8ed ${explodeStage}%,#ded8ed 100%)` }} onChange={(e) => setExplodeStage(Number(e.target.value))} aria-label="Continuous exploded view, 0 to 100" />
         <div className="slider-caption"><span>Built</span><span>Caps</span><span>Switches</span><span>Plate</span><span>Foam</span><span>PCB</span><span>Case</span></div>
       </div>
@@ -171,7 +171,7 @@ export default function App() {
       <div className="customize-section travel-section"><div className="field-row"><label className="field-label" htmlFor="travel">Switch travel</label><span className="field-value">{(travel * 4.2).toFixed(1)} mm</span></div>
         <input id="travel" className="travel-slider" type="range" min="0" max="1" step="0.01" value={travel} onChange={(e) => setTravel(Number(e.target.value))} />
       </div>
-      <p className="field-help">Pick a layer on the left to isolate it. The others stay visible as 15% ghosts.</p>
+      <p className="field-help">Choose a keycap palette, case finish, or plate. Select a layer to inspect it; other parts remain visible as ghosts.</p>
     </aside>}
 
     {showWorlds && <div className="worlds-backdrop" onClick={() => setShowWorlds(false)}>
